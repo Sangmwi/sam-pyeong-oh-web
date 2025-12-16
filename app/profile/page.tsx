@@ -19,7 +19,7 @@ export default function ProfilePage() {
     notifyAppLogout()
     
     // 2. Supabase 세션 완전 제거
-    await supabase.auth.signOut({ scope: 'global' })
+    await supabase.auth.signOut({ scope: 'local' })
     
     // 3. 로그인 페이지로 이동
     router.refresh()
