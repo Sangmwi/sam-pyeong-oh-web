@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import BottomNav from "./components/BottomNav";
+import WebViewBridge from "./components/WebViewBridge";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,6 +29,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-stone-100`}
       >
+        <WebViewBridge />
         <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background shadow-2xl">
           <main className="flex-1 pb-24">
             {children}

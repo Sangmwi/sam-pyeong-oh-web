@@ -1,4 +1,18 @@
+'use client'
+
+import { createClient } from '@/utils/supabase/client'
+import { useRouter } from 'next/navigation'
+
 export default function ProfilePage() {
+  const router = useRouter()
+  const supabase = createClient()
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.refresh()
+    router.push('/login')
+  }
+
   return (
     <div className="p-6">
       <h1 className="mb-6 text-2xl font-bold text-khaki-900">내 프로필</h1>
@@ -21,6 +35,15 @@ export default function ProfilePage() {
                <span>설정</span>
                <span className="text-muted-foreground">&gt;</span>
             </button>
+         </div>
+         
+         <div className="mt-12 flex justify-center">
+           <button 
+             onClick={handleSignOut}
+             className="text-xs text-gray-400 underline hover:text-gray-600"
+           >
+             로그아웃
+           </button>
          </div>
       </div>
     </div>
