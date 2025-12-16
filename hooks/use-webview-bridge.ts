@@ -15,15 +15,17 @@ export type AppToWebCommand =
   | { type: "GET_ROUTE_INFO" };
 
 /** 웹 → 앱 메시지 (postMessage로 전송) */
-export type WebToAppMessage = {
-  type: "ROUTE_INFO";
-  payload: {
-    path: string;
-    isTabRoute: boolean;
-    isHome: boolean;
-    canGoBack: boolean;
-  };
-};
+export type WebToAppMessage =
+  | {
+      type: "ROUTE_INFO";
+      payload: {
+        path: string;
+        isTabRoute: boolean;
+        isHome: boolean;
+        canGoBack: boolean;
+      };
+    }
+  | { type: "LOGOUT" };
 
 // ============================================================================
 // Global Type Declarations
@@ -93,6 +95,12 @@ export const useWebViewBridge = () => {
     sendRouteInfo();
   }, [sendRouteInfo]);
 
-  return { sendRouteInfo };
+  // 웹 → 앱: 로그아웃 알림 (WebView 리셋 트리거)
+  const sendLogout = useCallback(() => {
+    if (!window.ReactNativeWebView) return;
+    window.ReactNativeWebView.postMessage(JSON.stringify({ type: "LOGOUT" }));
+  }, []);
+
+  return { sendRouteInfo, sendLogout };
 };
 

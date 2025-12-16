@@ -1,15 +1,27 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const searchParams = useSearchParams()
   const supabase = createClient()
+
+  // URL에서 에러 파라미터 확인
+  useEffect(() => {
+    const errorParam = searchParams.get('error')
+    if (errorParam) {
+      setError(decodeURIComponent(errorParam))
+    }
+  }, [searchParams])
 
   const handleGoogleLogin = async () => {
     setIsLoading(true)
+    setError(null)
     try {
       const redirectUrl = `${window.location.origin}/auth/callback`
       console.log('Google Login Redirect URL:', redirectUrl)
@@ -38,6 +50,12 @@ export default function LoginPage() {
         <p className="text-center text-gray-500">
           서비스를 이용하려면 로그인이 필요합니다.
         </p>
+
+        {error && (
+          <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
+            로그인 실패: {error}
+          </div>
+        )}
         
         <button
           onClick={handleGoogleLogin}

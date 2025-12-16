@@ -3,12 +3,25 @@
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 
+// 앱에 로그아웃 알림 (WebView 리셋 트리거)
+const notifyAppLogout = () => {
+  if (typeof window !== 'undefined' && window.ReactNativeWebView) {
+    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'LOGOUT' }))
+  }
+}
+
 export default function ProfilePage() {
   const router = useRouter()
   const supabase = createClient()
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
+    // 1. 앱에 로그아웃 알림 (WebView 쿠키 클리어)
+    notifyAppLogout()
+    
+    // 2. Supabase 세션 완전 제거
+    await supabase.auth.signOut({ scope: 'global' })
+    
+    // 3. 로그인 페이지로 이동
     router.refresh()
     router.push('/login')
   }
