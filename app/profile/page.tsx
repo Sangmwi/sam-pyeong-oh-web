@@ -43,7 +43,7 @@ export default function ProfilePage() {
              className="text-xs text-gray-400 underline hover:text-gray-600"
            >
              로그아웃
-           </button>
+            </button>
          </div>
       </div>
     </div>
