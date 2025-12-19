@@ -1,63 +1,62 @@
-'use client'
+'use client';
 
-import { createClient } from '@/utils/supabase/client'
-import { useRouter } from 'next/navigation'
-
-// 앱에 로그아웃 알림 (WebView 리셋 트리거)
-const notifyAppLogout = () => {
-  if (typeof window !== 'undefined' && window.ReactNativeWebView) {
-    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'LOGOUT' }))
-  }
-}
+import { useRouter } from 'next/navigation';
+import { useCurrentUser, useSignOut } from '@/lib/hooks/useAuth';
+import ProfileHeader from '@/components/profile/ProfileHeader';
+import BodyInfoSection from '@/components/profile/BodyInfoSection';
+import InterestsSection from '@/components/profile/InterestsSection';
+import SettingsSection from '@/components/profile/SettingsSection';
+import { Loader2 } from 'lucide-react';
 
 export default function ProfilePage() {
-  const router = useRouter()
-  const supabase = createClient()
+  const router = useRouter();
+  const { data: user, isLoading, error } = useCurrentUser();
+  const signOutMutation = useSignOut();
 
-  const handleSignOut = async () => {
-    // 1. 앱에 로그아웃 알림 (WebView 쿠키 클리어)
-    notifyAppLogout()
-    
-    // 2. Supabase 세션 완전 제거
-    await supabase.auth.signOut({ scope: 'local' })
-    
-    // 3. 로그인 페이지로 이동
-    router.refresh()
-    router.push('/login')
+  const handleEdit = () => {
+    router.push('/profile/edit');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOutMutation.mutateAsync();
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-6">
+        <div className="text-center">
+          <p className="mb-4 text-sm text-muted-foreground">프로필을 불러올 수 없습니다</p>
+          <button
+            onClick={() => router.push('/login')}
+            className="rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground"
+          >
+            로그인하기
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="p-6">
-      <h1 className="mb-6 text-2xl font-bold text-green-900">내 프로필</h1>
-      <div className="rounded-2xl bg-white p-6 shadow-sm">
-         <div className="flex flex-col items-center gap-4">
-            <div className="h-24 w-24 rounded-full bg-green-300"></div>
-            <h2 className="text-xl font-bold">사용자님</h2>
-            <p className="text-sm text-muted-foreground">Beginner Level</p>
-         </div>
-         <div className="mt-8 space-y-1">
-            <button className="flex w-full justify-between rounded-lg p-3 hover:bg-green-50">
-               <span>내 정보 수정</span>
-               <span className="text-muted-foreground">&gt;</span>
-            </button>
-            <button className="flex w-full justify-between rounded-lg p-3 hover:bg-green-50">
-               <span>운동 기록</span>
-               <span className="text-muted-foreground">&gt;</span>
-            </button>
-            <button className="flex w-full justify-between rounded-lg p-3 hover:bg-green-50">
-               <span>설정</span>
-               <span className="text-muted-foreground">&gt;</span>
-            </button>
-         </div>
-         
-         <div className="mt-12 flex justify-center">
-           <button 
-             onClick={handleSignOut}
-             className="text-xs text-gray-400 underline hover:text-gray-600"
-           >
-             로그아웃
-            </button>
-         </div>
+    <div className="min-h-screen bg-background p-6">
+      <div className="mx-auto max-w-2xl space-y-6">
+        <ProfileHeader user={user} onEdit={handleEdit} />
+        <BodyInfoSection user={user} onEdit={handleEdit} />
+        <InterestsSection user={user} onEdit={handleEdit} />
+        <SettingsSection user={user} onEdit={handleEdit} onLogout={handleLogout} />
       </div>
     </div>
   );

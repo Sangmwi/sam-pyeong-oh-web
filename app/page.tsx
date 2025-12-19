@@ -1,56 +1,80 @@
 'use client';
 
+import { useCurrentUser } from '@/lib/hooks/useAuth';
 import GreetingSection from '@/components/home/GreetingSection';
 import HealthScoreCard from '@/components/home/HealthScoreCard';
 import SectionHeader from '@/components/home/SectionHeader';
-import ProductCard from '@/components/home/ProductCard';
+import ProductSlider from '@/components/home/ProductSlider';
 import InfluencerSlider from '@/components/home/InfluencerSlider';
-
-// 더미 데이터 타입 정의
-interface Product {
-  id: string;
-  brand: string;
-  description: string;
-  price: number;
-  imageUrl?: string;
-}
-
-interface Influencer {
-  id: string;
-  author: string;
-  title: string;
-  imageUrl?: string;
-  votes: number;
-}
+import HealthScoreCardSkeleton from '@/components/home/HealthScoreCardSkeleton';
+import InfluencerSliderSkeleton from '@/components/home/InfluencerSliderSkeleton';
+import { Skeleton, SkeletonGrid } from '@/components/ui/Skeleton';
+import ErrorState from '@/components/common/ErrorState';
+import { Product, Influencer } from '@/lib/types';
 
 // 더미 데이터
-const DUMMY_USER_NICKNAME = '한상휘';
 const DUMMY_HEALTH_SCORE = 78;
 
 const DUMMY_PRODUCTS: Product[] = [
   {
     id: '1',
     brand: 'Dr. Elizabeth',
-    description: '테아닌과 밀크씨슬 활력 솔루션',
+    name: '테아닌과 밀크씨슬 활력 솔루션',
     price: 25000,
   },
   {
     id: '2',
     brand: '빙그레',
-    description: '요플레 프로틴 맥스',
+    name: '요플레 프로틴 맥스',
     price: 1680,
   },
   {
     id: '3',
     brand: '매일유업',
-    description: '테셀렉스 코어 프로틴 베리오트바 50gx6',
+    name: '테셀렉스 코어 프로틴 베리오트바 50gx6',
     price: 4440,
   },
   {
     id: '4',
     brand: '매일유업',
-    description: '블루다이아몬드 아몬드브리즈 프로틴',
+    name: '블루다이아몬드 아몬드브리즈 프로틴',
     price: 550,
+  },
+  {
+    id: '5',
+    brand: '남양유업',
+    name: '맛있는 우유 GT 단백질',
+    price: 2200,
+  },
+  {
+    id: '6',
+    brand: '오뚜기',
+    name: '3분 카레 매운맛',
+    price: 1500,
+  },
+  {
+    id: '7',
+    brand: '롯데',
+    name: '칸쵸 오리지널',
+    price: 1200,
+  },
+  {
+    id: '8',
+    brand: 'CJ제일제당',
+    name: '백설 햇반',
+    price: 1800,
+  },
+  {
+    id: '9',
+    brand: '농심',
+    name: '신라면 블랙',
+    price: 1300,
+  },
+  {
+    id: '10',
+    brand: '해태',
+    name: '허니버터칩',
+    price: 1600,
   },
 ];
 
@@ -91,9 +115,35 @@ const DUMMY_INFLUENCERS: Influencer[] = [
     title: '상체 근력 향상을 위한 루틴',
     votes: 83,
   },
+  {
+    id: '7',
+    author: 'muscle_builder',
+    title: '벌크업 시즌 최적의 영양제 조합',
+    votes: 61,
+  },
+  {
+    id: '8',
+    author: 'endurance_pro',
+    title: '체력검정 만점 받는 훈련법',
+    votes: 88,
+  },
+  {
+    id: '9',
+    author: 'diet_expert',
+    title: '군 복무 중 체중 감량 성공 후기',
+    votes: 72,
+  },
+  {
+    id: '10',
+    author: 'pt_specialist',
+    title: '아침 PT 전 꼭 해야 할 스트레칭',
+    votes: 56,
+  },
 ];
 
 export default function Home() {
+  const { data: user, isLoading, error, refetch } = useCurrentUser();
+
   const handleViewHealthDetails = () => {
     // TODO: 건강 점수 상세 페이지로 이동
     console.log('건강 점수 상세 보기');
@@ -119,44 +169,70 @@ export default function Home() {
     console.log('인플루언서 클릭:', influencerId);
   };
 
-  return (
-    <div className="flex flex-col gap-6 p-6">
-      <GreetingSection nickname={DUMMY_USER_NICKNAME} />
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="flex flex-col gap-6 p-6">
+          {/* Greeting Skeleton */}
+          <div>
+            <Skeleton height="28px" width="180px" className="mb-2" />
+            <Skeleton height="16px" width="140px" />
+          </div>
 
-      <HealthScoreCard score={DUMMY_HEALTH_SCORE} onViewDetails={handleViewHealthDetails} />
+          {/* Health Score Skeleton */}
+          <HealthScoreCardSkeleton />
 
-      <section>
-        <SectionHeader
-          title="이번주 PX 핫템 TOP 4 🔥🔥🔥"
-          showMoreButton
-          onMoreClick={handleViewMoreProducts}
-        />
-        <div className="grid grid-cols-2 gap-4">
-          {DUMMY_PRODUCTS.map((product) => (
-            <ProductCard
-              key={product.id}
-              brand={product.brand}
-              description={product.description}
-              price={product.price}
-              imageUrl={product.imageUrl}
-              onClick={() => handleProductClick(product.id)}
-            />
-          ))}
+          {/* Products Section Skeleton */}
+          <section>
+            <Skeleton height="24px" width="200px" className="mb-4" />
+            <SkeletonGrid columns={2} items={4} />
+          </section>
+
+          {/* Influencer Section Skeleton */}
+          <section>
+            <Skeleton height="24px" width="140px" className="mb-4" />
+            <InfluencerSliderSkeleton />
+          </section>
         </div>
-      </section>
+      </div>
+    );
+  }
 
-      <section>
-        <SectionHeader
-          title="삼플루언서"
-          showMoreButton
-          onMoreClick={handleViewMoreInfluencers}
-        />
-        <InfluencerSlider
-          influencers={DUMMY_INFLUENCERS}
-          onMoreClick={handleViewMoreInfluencers}
-          onCardClick={handleInfluencerClick}
-        />
-      </section>
+  if (error) {
+    return <ErrorState onRetry={refetch} fullPage />;
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="flex flex-col gap-6 p-6">
+        <GreetingSection nickname={user?.nickname || '사용자'} />
+
+        <HealthScoreCard score={DUMMY_HEALTH_SCORE} onViewDetails={handleViewHealthDetails} />
+
+        <section>
+          <SectionHeader
+            title="이주의 PX 핫템 🔥"
+            showMoreButton
+            onMoreClick={handleViewMoreProducts}
+          />
+          <ProductSlider
+            products={DUMMY_PRODUCTS}
+            onCardClick={handleProductClick}
+          />
+        </section>
+
+        <section>
+          <SectionHeader
+            title="이주의 인플루언서"
+            showMoreButton
+            onMoreClick={handleViewMoreInfluencers}
+          />
+          <InfluencerSlider
+            influencers={DUMMY_INFLUENCERS}
+            onCardClick={handleInfluencerClick}
+          />
+        </section>
+      </div>
     </div>
   );
 }

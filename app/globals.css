@@ -66,23 +66,44 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a2610; /* green-950 */
-    --foreground: #f0faf3; /* green-50 */
-    
-    --primary: #5fc07f; /* green-400 - 다크모드에서 더 밝게 */
-    --primary-foreground: #0a2610;
-    
-    --secondary: #17451c; /* green-900 */
-    --secondary-foreground: #dbf5e2; /* green-100 */
-    
-    --muted: #1a5421; /* green-800 */
-    --muted-foreground: #88d9a2; /* green-300 */
+    /* 배경: 가장 어두운 slate */
+    --background: #0f172a; /* slate-900 */
+    --foreground: #f1f5f9; /* slate-100 - 밝은 텍스트 */
 
-    --card: #0f3015;
-    --card-foreground: #f0faf3;
-    
-    --border: #1a5421;
-    --input: #17451c;
+    /* Primary: 브랜드 그린을 밝게 (green-400) */
+    --primary: #5fc07f; /* green-400 */
+    --primary-foreground: #0a2610; /* green-950 - 어두운 텍스트 */
+
+    /* Secondary: 라이트모드보다 어둡게 */
+    --secondary: #1e293b; /* slate-800 */
+    --secondary-foreground: #e2e8f0; /* slate-200 - 밝은 텍스트 */
+
+    /* 카드: 배경보다 약간 밝은 어두운 톤 (흰색 아님!) */
+    --card: #1e293b; /* slate-800 */
+    --card-foreground: #f1f5f9; /* slate-100 - 밝은 텍스트 */
+
+    /* Muted: 카드보다 약간 어두운 톤 (계층 구분) */
+    --muted: #0f172a; /* slate-900 - 배경과 동일 (카드보다 어두움) */
+    --muted-foreground: #94a3b8; /* slate-400 - 중간 밝기 */
+
+    /* Border: 미묘한 구분선 */
+    --border: #334155; /* slate-700 */
+
+    /* Input: 카드와 동일한 어두운 배경 */
+    --input: #1e293b; /* slate-800 */
+
+    /* Green 브랜드 컬러 스케일 반전 */
+    --color-green-50: #0a2610;   /* 950 반전 */
+    --color-green-100: #17451c;  /* 900 반전 */
+    --color-green-200: #1a5421;  /* 800 반전 */
+    --color-green-300: #1B6523;  /* 700 반전 */
+    --color-green-400: #328a4d;  /* 600 반전 */
+    --color-green-500: #50A76C;  /* 500 동일 (중간) */
+    --color-green-600: #5fc07f;  /* 400 반전 */
+    --color-green-700: #88d9a2;  /* 300 반전 */
+    --color-green-800: #b9eac8;  /* 200 반전 */
+    --color-green-900: #dbf5e2;  /* 100 반전 */
+    --color-green-950: #f0faf3;  /* 50 반전 */
   }
 }
 

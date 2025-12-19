@@ -1,5 +1,7 @@
 'use client';
 
+import ViewMoreButton from '@/components/ui/ViewMoreButton';
+
 interface SectionHeaderProps {
   title: string;
   showMoreButton?: boolean;
@@ -11,12 +13,9 @@ export default function SectionHeader({ title, showMoreButton = false, onMoreCli
     <div className="flex items-center justify-between mb-4">
       <h2 className="text-lg font-semibold text-green-800">{title}</h2>
       {showMoreButton && (
-        <button
-          onClick={onMoreClick}
-          className="text-sm text-muted-foreground hover:text-primary transition-colors"
-        >
+        <ViewMoreButton onClick={onMoreClick} className="text-sm">
           더보기
-        </button>
+        </ViewMoreButton>
       )}
     </div>
   );
