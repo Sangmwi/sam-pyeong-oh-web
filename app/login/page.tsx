@@ -1,14 +1,14 @@
 "use client";
 
 import { createClient } from "@/utils/supabase/client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import GoogleLogo from "@/assets/logos/google.svg";
 import logoImage from "@/assets/images/splash-image-md.png";
 
-export default function LoginPage() {
+function LoginContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
@@ -113,5 +113,19 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-100">
+          <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }
