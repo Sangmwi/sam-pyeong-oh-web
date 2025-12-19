@@ -152,6 +152,7 @@ export default function ProfilePhotoGallery({
         try {
           const response = await fetchWithTimeout('/api/user/profile/image', {
             method: 'POST',
+            credentials: 'include',
             body: formData,
           });
 
@@ -232,6 +233,7 @@ export default function ProfilePhotoGallery({
       const response = await fetch('/api/user/profile/image', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ imageUrl }),
       });
 
@@ -301,6 +303,7 @@ export default function ProfilePhotoGallery({
       const response = await fetch('/api/user/profile/image', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ profileImages: newImages }),
       });
 
@@ -401,6 +404,7 @@ export default function ProfilePhotoGallery({
         const response = await fetch('/api/user/profile/image', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ profileImages: newImages }),
         });
 

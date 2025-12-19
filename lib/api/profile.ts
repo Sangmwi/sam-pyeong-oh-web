@@ -19,8 +19,9 @@ export const profileApi = {
    */
   async getCurrentUserProfile(): Promise<User | null> {
     const response = await fetch('/api/user/me', {
-      method: 'GET',  
+      method: 'GET',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // 웹뷰에서 쿠키 전달을 위해 필수
     });
 
     if (response.status === 404) return null;
@@ -44,6 +45,7 @@ export const profileApi = {
     const response = await fetch(`/api/user/${userId}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
     });
 
     if (response.status === 404) return null;
@@ -67,6 +69,7 @@ export const profileApi = {
     const response = await fetch('/api/user/profile', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
 
@@ -96,6 +99,7 @@ export const profileApi = {
 
     const response = await fetch('/api/user/profile/image', {
       method: 'POST',
+      credentials: 'include',
       body: formData,
     });
 
@@ -117,6 +121,7 @@ export const profileApi = {
     const response = await fetch('/api/user/profile/image', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ imageUrl }),
     });
 
@@ -222,6 +227,7 @@ export const profileSearchApi = {
     const response = await fetch(`/api/user/search?${queryParams}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -253,6 +259,7 @@ export const profileSearchApi = {
       {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
       }
     );
 
@@ -279,6 +286,7 @@ export const profileSearchApi = {
       {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
       }
     );
 

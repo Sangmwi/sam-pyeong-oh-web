@@ -16,7 +16,9 @@ const api = {
 
     if (!authUser) return null;
 
-    const response = await fetch('/api/user/me');
+    const response = await fetch('/api/user/me', {
+      credentials: 'include',
+    });
     if (!response.ok) {
       if (response.status === 404) return null;
       throw new Error('Failed to fetch user');
@@ -26,7 +28,9 @@ const api = {
 
   // Check nickname availability
   async checkNickname(nickname: string): Promise<{ available: boolean }> {
-    const response = await fetch(`/api/user/check-nickname?nickname=${encodeURIComponent(nickname)}`);
+    const response = await fetch(`/api/user/check-nickname?nickname=${encodeURIComponent(nickname)}`, {
+      credentials: 'include',
+    });
     if (!response.ok) throw new Error('Failed to check nickname');
     return response.json();
   },
@@ -38,6 +42,7 @@ const api = {
     const response = await fetch('/api/signup/complete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
 
@@ -82,6 +87,7 @@ const api = {
     const response = await fetch('/api/user/profile', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error('Failed to update profile');
