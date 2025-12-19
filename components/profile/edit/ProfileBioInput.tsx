@@ -1,13 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-
 interface ProfileBioInputProps {
-  defaultValue?: string;
+  value: string;
+  onChange: (value: string) => void;
 }
 
-export default function ProfileBioInput({ defaultValue = '' }: ProfileBioInputProps) {
-  const [bio, setBio] = useState(defaultValue || '');
+export default function ProfileBioInput({ value, onChange }: ProfileBioInputProps) {
   const maxLength = 500;
 
   return (
@@ -19,14 +17,14 @@ export default function ProfileBioInput({ defaultValue = '' }: ProfileBioInputPr
 
       <div className="relative">
         <textarea
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
           maxLength={maxLength}
           placeholder="소개글을 입력하세요..."
           className="w-full h-32 px-4 py-3 rounded-xl bg-muted/30 border border-border text-sm text-card-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
         />
         <div className="absolute bottom-3 right-3 text-xs text-muted-foreground">
-          {(bio || '').length}/{maxLength}
+          {value.length}/{maxLength}
         </div>
       </div>
     </section>

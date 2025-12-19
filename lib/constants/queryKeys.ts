@@ -26,6 +26,18 @@ export const queryKeys = {
     /** 닉네임 중복 확인 */
     checkNickname: (nickname: string) =>
       [...queryKeys.user.all, 'check-nickname', nickname] as const,
+
+    /** 프로필 검색 */
+    search: (filters?: ProfileSearchFilters) =>
+      [...queryKeys.user.all, 'search', filters] as const,
+
+    /** 추천 프로필 */
+    recommendations: (limit?: number) =>
+      [...queryKeys.user.all, 'recommendations', limit] as const,
+
+    /** 같은 부대 사용자 */
+    sameUnit: (unitId: string, limit?: number) =>
+      [...queryKeys.user.all, 'same-unit', unitId, limit] as const,
   },
 
   /**
@@ -104,4 +116,18 @@ export interface PostFilters {
 export interface InfluencerFilters {
   sortBy?: 'votes' | 'recent';
   page?: number;
+}
+
+export interface ProfileSearchFilters {
+  ranks?: string[];
+  unitIds?: string[];
+  specialties?: string[];
+  interestedExercises?: string[];
+  interestedLocations?: string[];
+  heightRange?: [number, number];
+  weightRange?: [number, number];
+  isSmoker?: boolean;
+  page?: number;
+  limit?: number;
+  sortBy?: 'recent' | 'similarity';
 }

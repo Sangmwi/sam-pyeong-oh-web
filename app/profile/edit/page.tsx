@@ -1,29 +1,82 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCurrentUser } from '@/lib/hooks/useAuth';
+import { useCurrentUserProfile, useUpdateProfile, useProfileProgress } from '@/lib/hooks/useProfile';
 import { ArrowLeft } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 import ProfilePhotoUploadSection from '@/components/profile/edit/ProfilePhotoUploadSection';
 import ProfileBioInput from '@/components/profile/edit/ProfileBioInput';
-import ProfileDetailsSection from '@/components/profile/edit/ProfileDetailsSection';
+import ProfileHeightWeightInput from '@/components/profile/edit/ProfileHeightWeightInput';
 import ProfileInbodyInput from '@/components/profile/edit/ProfileInbodyInput';
 import ProfileLocationsInput from '@/components/profile/edit/ProfileLocationsInput';
 import ProfileInterestsInput from '@/components/profile/edit/ProfileInterestsInput';
 
 export default function ProfileEditPage() {
   const router = useRouter();
-  const { data: user, isLoading, error } = useCurrentUser();
-  const [progress, setProgress] = useState(45);
+  const { data: user, isLoading, error } = useCurrentUserProfile();
+  const updateProfile = useUpdateProfile();
+
+  // Form state - 모든 입력 필드를 한 곳에서 관리
+  const [formData, setFormData] = useState({
+    bio: '',
+    height: '',
+    weight: '',
+    muscleMass: '',
+    bodyFatPercentage: '',
+    showInbodyPublic: true,
+    interestedLocations: [] as string[],
+    interestedExercises: [] as string[],
+  });
+
+  // User 데이터가 로드되면 form 초기화
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        bio: user.bio || '',
+        height: user.height?.toString() || '',
+        weight: user.weight?.toString() || '',
+        muscleMass: user.muscleMass?.toString() || '',
+        bodyFatPercentage: user.bodyFatPercentage?.toString() || '',
+        showInbodyPublic: user.showInbodyPublic ?? true,
+        interestedLocations: user.interestedLocations || [],
+        interestedExercises: user.interestedExercises || [],
+      });
+    }
+  }, [user]);
+
+  // 프로필 완성도 계산
+  const progress = useProfileProgress(user);
 
   const handleBack = () => {
     router.back();
   };
 
   const handleSave = async () => {
-    // TODO: Implement save functionality
-    console.log('Save profile');
+    if (!user) return;
+
+    // Form 데이터 변환 및 검증
+    const updates: any = {
+      bio: formData.bio.trim() || undefined,
+      height: formData.height ? Number(formData.height) : undefined,
+      weight: formData.weight ? Number(formData.weight) : undefined,
+      muscleMass: formData.muscleMass ? Number(formData.muscleMass) : undefined,
+      bodyFatPercentage: formData.bodyFatPercentage ? Number(formData.bodyFatPercentage) : undefined,
+      showInbodyPublic: formData.showInbodyPublic,
+      interestedLocations: formData.interestedLocations,
+      interestedExercises: formData.interestedExercises,
+    };
+
+    // Mutation 실행
+    updateProfile.mutate(updates, {
+      onSuccess: () => {
+        router.push('/profile');
+      },
+      onError: (error) => {
+        console.error('Failed to update profile:', error);
+        alert('프로필 저장에 실패했습니다. 다시 시도해주세요.');
+      },
+    });
   };
 
   if (isLoading) {
@@ -88,32 +141,51 @@ export default function ProfileEditPage() {
         <ProfilePhotoUploadSection user={user} />
 
         {/* Bio Input */}
-        <ProfileBioInput defaultValue={user.bio} />
+        <ProfileBioInput
+          value={formData.bio}
+          onChange={(value) => setFormData({ ...formData, bio: value })}
+        />
 
-        {/* My Details */}
-        <ProfileDetailsSection user={user} />
+        {/* Height & Weight Input */}
+        <ProfileHeightWeightInput
+          height={formData.height}
+          weight={formData.weight}
+          onHeightChange={(value) => setFormData({ ...formData, height: value })}
+          onWeightChange={(value) => setFormData({ ...formData, weight: value })}
+        />
 
         {/* Inbody Input */}
         <ProfileInbodyInput
-          defaultMuscleMass={user.muscleMass}
-          defaultBodyFatPercentage={user.bodyFatPercentage}
-          defaultShowInbodyPublic={user.showInbodyPublic}
+          muscleMass={formData.muscleMass}
+          bodyFatPercentage={formData.bodyFatPercentage}
+          showInbodyPublic={formData.showInbodyPublic}
+          onMuscleMassChange={(value) => setFormData({ ...formData, muscleMass: value })}
+          onBodyFatPercentageChange={(value) => setFormData({ ...formData, bodyFatPercentage: value })}
+          onShowInbodyPublicChange={(value) => setFormData({ ...formData, showInbodyPublic: value })}
         />
 
         {/* Favorite Locations Input */}
-        <ProfileLocationsInput defaultLocations={user.interestedLocations} />
+        <ProfileLocationsInput
+          value={formData.interestedLocations}
+          onChange={(value) => setFormData({ ...formData, interestedLocations: value })}
+        />
 
         {/* Interests Input */}
-        <ProfileInterestsInput defaultInterests={user.interestedExercises} />
+        <ProfileInterestsInput
+          value={formData.interestedExercises}
+          onChange={(value) => setFormData({ ...formData, interestedExercises: value })}
+        />
       </div>
 
       {/* Save Button - Fixed at bottom */}
       <div className="fixed bottom-0 left-0 right-0 p-5 bg-background border-t border-border/50">
         <button
           onClick={handleSave}
-          className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
+          disabled={updateProfile.isPending}
+          className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          저장하기
+          {updateProfile.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+          {updateProfile.isPending ? '저장 중...' : '저장하기'}
         </button>
       </div>
     </div>

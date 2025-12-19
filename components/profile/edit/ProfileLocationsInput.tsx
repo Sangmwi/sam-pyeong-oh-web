@@ -4,23 +4,23 @@ import { useState } from 'react';
 import { X, Plus } from 'lucide-react';
 
 interface ProfileLocationsInputProps {
-  defaultLocations?: string[];
+  value: string[];
+  onChange: (value: string[]) => void;
 }
 
-export default function ProfileLocationsInput({ defaultLocations = [] }: ProfileLocationsInputProps) {
-  const [locations, setLocations] = useState<string[]>(defaultLocations);
+export default function ProfileLocationsInput({ value, onChange }: ProfileLocationsInputProps) {
   const [inputValue, setInputValue] = useState('');
 
   const handleAddLocation = () => {
     const trimmedValue = inputValue.trim();
-    if (trimmedValue && !locations.includes(trimmedValue)) {
-      setLocations([...locations, trimmedValue]);
+    if (trimmedValue && !value.includes(trimmedValue)) {
+      onChange([...value, trimmedValue]);
       setInputValue('');
     }
   };
 
   const handleRemoveLocation = (index: number) => {
-    setLocations(locations.filter((_, i) => i !== index));
+    onChange(value.filter((_, i) => i !== index));
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -58,9 +58,9 @@ export default function ProfileLocationsInput({ defaultLocations = [] }: Profile
       </div>
 
       {/* Tags Display */}
-      {locations.length > 0 && (
+      {value.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {locations.map((location, index) => (
+          {value.map((location, index) => (
             <div
               key={index}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[14px] bg-card text-xs text-card-foreground border border-border/50"

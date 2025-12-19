@@ -3,6 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
+import { useUserProfile } from '@/lib/hooks/useProfile';
 import ProfileHeroSection from '@/components/profile/ProfileHeroSection';
 import ProfileLocationCard from '@/components/profile/ProfileLocationCard';
 import ProfileBioSection from '@/components/profile/ProfileBioSection';
@@ -14,50 +15,13 @@ import ProfileLocationsSection from '@/components/profile/ProfileLocationsSectio
 import FloatingChatButton from '@/components/profile/FloatingChatButton';
 import { Loader2, ArrowLeft } from 'lucide-react';
 
-// TODO: Replace with actual API call
-const fetchUserProfile = async (userId: string) => {
-  // Mock data for now
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
-  return {
-    id: userId,
-    providerId: 'mock-provider',
-    email: 'user@example.com',
-    realName: '한상휘',
-    phoneNumber: '010-1234-5678',
-    birthDate: '2000-03-15',
-    gender: 'male' as const,
-    nickname: '한상휘',
-    enlistmentMonth: '2023-08',
-    rank: '병장-1호봉' as const,
-    unitId: 'unit-123',
-    unitName: '육군훈련소 30연대 8중대',
-    specialty: '보병' as const,
-    profileImage: undefined,
-    bio: '2025년 2월에 전역하는 한상휘입니다. 말년 기간 동안 함께 30연대 인근에서 운동하실 분 있으면 말씀주세요!\n비슷한 시기에 전역하면서 체급, 운동 경력 비슷한 분이면 좋을거 같습니다.',
-    height: 175,
-    weight: 85,
-    interestedExercises: ['헬스(웨이트리프팅)', '러닝', '맨몸운동'],
-    isSmoker: false,
-    createdAt: new Date().toISOString(),
-  };
-};
-
 export default function UserProfilePage() {
   const router = useRouter();
   const params = useParams();
   const userId = params.userId as string;
 
-  const [user, setUser] = React.useState<any>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<Error | null>(null);
-
-  React.useEffect(() => {
-    fetchUserProfile(userId)
-      .then(setUser)
-      .catch(setError)
-      .finally(() => setIsLoading(false));
-  }, [userId]);
+  // React Query로 데이터 페칭
+  const { data: user, isLoading, error } = useUserProfile(userId);
 
   const handleBack = () => {
     router.back();

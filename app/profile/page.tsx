@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCurrentUser } from '@/lib/hooks/useAuth';
+import { useCurrentUserProfile } from '@/lib/hooks/useProfile';
 import ProfileHeroSection from '@/components/profile/ProfileHeroSection';
 import ProfileLocationCard from '@/components/profile/ProfileLocationCard';
 import ProfileBioSection from '@/components/profile/ProfileBioSection';
@@ -14,7 +14,7 @@ import { Loader2, ArrowLeft, Settings } from 'lucide-react';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { data: user, isLoading, error } = useCurrentUser();
+  const { data: user, isLoading, error } = useCurrentUserProfile();
 
   const handleEdit = () => {
     router.push('/profile/edit');

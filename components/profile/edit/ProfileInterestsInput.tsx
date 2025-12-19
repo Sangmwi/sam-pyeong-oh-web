@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { X } from 'lucide-react';
 
 interface ProfileInterestsInputProps {
-  defaultInterests?: string[];
+  value: string[];
+  onChange: (value: string[]) => void;
 }
 
 const EXERCISE_OPTIONS = [
@@ -30,14 +30,12 @@ const EXERCISE_OPTIONS = [
   '클라이밍',
 ];
 
-export default function ProfileInterestsInput({ defaultInterests = [] }: ProfileInterestsInputProps) {
-  const [selectedInterests, setSelectedInterests] = useState<string[]>(defaultInterests);
-
+export default function ProfileInterestsInput({ value, onChange }: ProfileInterestsInputProps) {
   const handleToggleInterest = (interest: string) => {
-    if (selectedInterests.includes(interest)) {
-      setSelectedInterests(selectedInterests.filter((i) => i !== interest));
+    if (value.includes(interest)) {
+      onChange(value.filter((i) => i !== interest));
     } else {
-      setSelectedInterests([...selectedInterests, interest]);
+      onChange([...value, interest]);
     }
   };
 
@@ -49,9 +47,9 @@ export default function ProfileInterestsInput({ defaultInterests = [] }: Profile
       </p>
 
       {/* Selected Interests */}
-      {selectedInterests.length > 0 && (
+      {value.length > 0 && (
         <div className="flex flex-wrap gap-2 p-3 rounded-xl bg-muted/30 border border-border">
-          {selectedInterests.map((interest, index) => (
+          {value.map((interest, index) => (
             <div
               key={index}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[14px] bg-primary text-primary-foreground text-xs"
@@ -72,7 +70,7 @@ export default function ProfileInterestsInput({ defaultInterests = [] }: Profile
       {/* Exercise Options */}
       <div className="flex flex-wrap gap-2">
         {EXERCISE_OPTIONS.map((exercise) => {
-          const isSelected = selectedInterests.includes(exercise);
+          const isSelected = value.includes(exercise);
           return (
             <button
               key={exercise}

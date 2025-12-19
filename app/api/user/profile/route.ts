@@ -53,16 +53,16 @@ export async function PATCH(request: NextRequest) {
     const updateData: Record<string, any> = {};
 
     if (body.nickname !== undefined) updateData.nickname = body.nickname;
-    if (body.profileImage !== undefined) updateData.profile_image = body.profileImage;
+    if (body.profileImage !== undefined) updateData.profile_image_url = body.profileImage;
     if (body.bio !== undefined) updateData.bio = body.bio;
-    if (body.height !== undefined) updateData.height = body.height;
-    if (body.weight !== undefined) updateData.weight = body.weight;
-    if (body.muscleMass !== undefined) updateData.muscle_mass = body.muscleMass;
+    if (body.height !== undefined) updateData.height_cm = body.height;
+    if (body.weight !== undefined) updateData.weight_kg = body.weight;
+    if (body.muscleMass !== undefined) updateData.skeletal_muscle_mass_kg = body.muscleMass;
     if (body.bodyFatPercentage !== undefined) updateData.body_fat_percentage = body.bodyFatPercentage;
-    if (body.interestedLocations !== undefined) updateData.interested_locations = body.interestedLocations;
-    if (body.interestedExercises !== undefined) updateData.interested_exercises = body.interestedExercises;
+    if (body.interestedLocations !== undefined) updateData.interested_exercise_locations = body.interestedLocations;
+    if (body.interestedExercises !== undefined) updateData.interested_exercise_types = body.interestedExercises;
     if (body.isSmoker !== undefined) updateData.is_smoker = body.isSmoker;
-    if (body.showInbodyPublic !== undefined) updateData.show_inbody_public = body.showInbodyPublic;
+    if (body.showInbodyPublic !== undefined) updateData.show_body_metrics = body.showInbodyPublic;
 
     updateData.updated_at = new Date().toISOString();
 
@@ -89,20 +89,20 @@ export async function PATCH(request: NextRequest) {
       gender: updatedUser.gender,
       nickname: updatedUser.nickname,
       enlistmentMonth: updatedUser.enlistment_month,
-      rank: updatedUser.rank,
+      rank: `${updatedUser.rank}-${updatedUser.rank_grade}호봉`,
       unitId: updatedUser.unit_id,
       unitName: updatedUser.unit_name,
       specialty: updatedUser.specialty,
-      profileImage: updatedUser.profile_image,
+      profileImage: updatedUser.profile_image_url,
       bio: updatedUser.bio,
-      height: updatedUser.height,
-      weight: updatedUser.weight,
-      muscleMass: updatedUser.muscle_mass,
+      height: updatedUser.height_cm,
+      weight: updatedUser.weight_kg,
+      muscleMass: updatedUser.skeletal_muscle_mass_kg,
       bodyFatPercentage: updatedUser.body_fat_percentage,
-      interestedLocations: updatedUser.interested_locations,
-      interestedExercises: updatedUser.interested_exercises,
+      interestedLocations: updatedUser.interested_exercise_locations,
+      interestedExercises: updatedUser.interested_exercise_types,
       isSmoker: updatedUser.is_smoker,
-      showInbodyPublic: updatedUser.show_inbody_public,
+      showInbodyPublic: updatedUser.show_body_metrics,
       createdAt: updatedUser.created_at,
       updatedAt: updatedUser.updated_at,
     };

@@ -46,6 +46,7 @@ export default function ImageWithFallback({
   fallbackClassName = 'bg-muted/80 border border-border/30',
   className,
   fill,
+  sizes,
   ...props
 }: ImageWithFallbackProps) {
   const [error, setError] = useState(false);
@@ -61,6 +62,7 @@ export default function ImageWithFallback({
           src={fallbackSrc}
           alt={alt}
           fill={fill}
+          sizes={sizes}
           className={className}
           onError={() => setError(true)}
         />
@@ -101,6 +103,7 @@ export default function ImageWithFallback({
       src={src}
       alt={alt}
       fill={fill}
+      sizes={sizes}
       className={`${className} ${loading ? 'bg-muted animate-pulse' : ''}`}
       onLoad={() => setLoading(false)}
       onError={() => setError(true)}

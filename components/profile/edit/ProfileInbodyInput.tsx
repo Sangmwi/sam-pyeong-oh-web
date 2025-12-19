@@ -1,21 +1,22 @@
 'use client';
 
-import { useState } from 'react';
-
 interface ProfileInbodyInputProps {
-  defaultMuscleMass?: number;
-  defaultBodyFatPercentage?: number;
-  defaultShowInbodyPublic?: boolean;
+  muscleMass: string;
+  bodyFatPercentage: string;
+  showInbodyPublic: boolean;
+  onMuscleMassChange: (value: string) => void;
+  onBodyFatPercentageChange: (value: string) => void;
+  onShowInbodyPublicChange: (value: boolean) => void;
 }
 
 export default function ProfileInbodyInput({
-  defaultMuscleMass,
-  defaultBodyFatPercentage,
-  defaultShowInbodyPublic = true,
+  muscleMass,
+  bodyFatPercentage,
+  showInbodyPublic,
+  onMuscleMassChange,
+  onBodyFatPercentageChange,
+  onShowInbodyPublicChange,
 }: ProfileInbodyInputProps) {
-  const [muscleMass, setMuscleMass] = useState(defaultMuscleMass?.toString() || '');
-  const [bodyFatPercentage, setBodyFatPercentage] = useState(defaultBodyFatPercentage?.toString() || '');
-  const [showInbodyPublic, setShowInbodyPublic] = useState(defaultShowInbodyPublic);
 
   return (
     <section className="space-y-3">
@@ -32,7 +33,7 @@ export default function ProfileInbodyInput({
             type="number"
             step="0.1"
             value={muscleMass}
-            onChange={(e) => setMuscleMass(e.target.value)}
+            onChange={(e) => onMuscleMassChange(e.target.value)}
             placeholder="예: 35.2"
             className="w-full px-4 py-3 rounded-xl bg-muted/30 border border-border text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
           />
@@ -45,7 +46,7 @@ export default function ProfileInbodyInput({
             type="number"
             step="0.1"
             value={bodyFatPercentage}
-            onChange={(e) => setBodyFatPercentage(e.target.value)}
+            onChange={(e) => onBodyFatPercentageChange(e.target.value)}
             placeholder="예: 15.5"
             className="w-full px-4 py-3 rounded-xl bg-muted/30 border border-border text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
           />
@@ -61,7 +62,7 @@ export default function ProfileInbodyInput({
           </div>
           <button
             type="button"
-            onClick={() => setShowInbodyPublic(!showInbodyPublic)}
+            onClick={() => onShowInbodyPublicChange(!showInbodyPublic)}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
               showInbodyPublic ? 'bg-primary' : 'bg-muted'
             }`}
