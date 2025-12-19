@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useState } from 'react';
 import { useCurrentUserProfile } from '@/lib/hooks/useProfile';
 import { createClient } from '@/utils/supabase/client';
@@ -19,10 +20,6 @@ export default function ProfilePage() {
   const { data: user, isLoading, error } = useCurrentUserProfile();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const supabase = createClient();
-
-  const handleEdit = () => {
-    router.push('/profile/edit');
-  };
 
   const handleBack = () => {
     router.back();
@@ -77,13 +74,14 @@ export default function ProfilePage() {
           </button>
           <h1 className="text-base font-bold text-card-foreground">내 프로필</h1>
           {/* Edit button - only show for own profile */}
-          <button
-            onClick={handleEdit}
+          <Link
+            href="/profile/edit"
+            prefetch={true}
             className="p-1.5 hover:bg-muted/50 rounded-lg transition-colors"
             aria-label="설정"
           >
             <Settings className="w-5 h-5 text-muted-foreground" />
-          </button>
+          </Link>
         </div>
       </div>
 

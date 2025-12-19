@@ -39,9 +39,17 @@ export default function ProfilePhotoUploadSection({ user }: ProfilePhotoUploadSe
       return;
     }
 
+    // Create optimistic preview URL immediately
+    const previewUrl = URL.createObjectURL(file);
+    const previousPhoto = mainPhoto;
+    setMainPhoto(previewUrl);
+
     try {
       // 압축 전 파일 크기 체크 (10MB 초과 시 거부)
       if (file.size > 10 * 1024 * 1024) {
+        // Revert on error
+        URL.revokeObjectURL(previewUrl);
+        setMainPhoto(previousPhoto);
         alert('파일 크기는 10MB 이하여야 합니다.');
         return;
       }
@@ -61,9 +69,15 @@ export default function ProfilePhotoUploadSection({ user }: ProfilePhotoUploadSe
 
       // 압축된 파일 업로드
       const imageUrl = await uploadImage.mutateAsync({ file: compressedFile, type: 'main' });
+
+      // Replace preview with CDN URL and clean up blob URL
+      URL.revokeObjectURL(previewUrl);
       setMainPhoto(imageUrl);
     } catch (error) {
       console.error('Failed to upload main photo:', error);
+      // Revert to previous photo on error
+      URL.revokeObjectURL(previewUrl);
+      setMainPhoto(previousPhoto);
       alert('사진 업로드에 실패했습니다. 다시 시도해주세요.');
     }
   };
@@ -81,9 +95,21 @@ export default function ProfilePhotoUploadSection({ user }: ProfilePhotoUploadSe
       return;
     }
 
+    // Create optimistic preview URL immediately
+    const previewUrl = URL.createObjectURL(file);
+    const previousPhoto = additionalPhotos[index];
+    const newPhotos = [...additionalPhotos];
+    newPhotos[index] = previewUrl;
+    setAdditionalPhotos(newPhotos);
+
     try {
       // 압축 전 파일 크기 체크 (10MB 초과 시 거부)
       if (file.size > 10 * 1024 * 1024) {
+        // Revert on error
+        URL.revokeObjectURL(previewUrl);
+        const revertedPhotos = [...additionalPhotos];
+        revertedPhotos[index] = previousPhoto;
+        setAdditionalPhotos(revertedPhotos);
         alert('파일 크기는 10MB 이하여야 합니다.');
         return;
       }
@@ -103,11 +129,19 @@ export default function ProfilePhotoUploadSection({ user }: ProfilePhotoUploadSe
 
       // 압축된 파일 업로드
       const imageUrl = await uploadImage.mutateAsync({ file: compressedFile, type: 'additional' });
-      const newPhotos = [...additionalPhotos];
-      newPhotos[index] = imageUrl;
-      setAdditionalPhotos(newPhotos);
+
+      // Replace preview with CDN URL and clean up blob URL
+      URL.revokeObjectURL(previewUrl);
+      const finalPhotos = [...additionalPhotos];
+      finalPhotos[index] = imageUrl;
+      setAdditionalPhotos(finalPhotos);
     } catch (error) {
       console.error('Failed to upload additional photo:', error);
+      // Revert to previous photo on error
+      URL.revokeObjectURL(previewUrl);
+      const revertedPhotos = [...additionalPhotos];
+      revertedPhotos[index] = previousPhoto;
+      setAdditionalPhotos(revertedPhotos);
       alert('사진 업로드에 실패했습니다. 다시 시도해주세요.');
     }
   };

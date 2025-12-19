@@ -105,11 +105,14 @@ export async function POST(request: NextRequest) {
       data: { publicUrl },
     } = supabase.storage.from('profile-images').getPublicUrl(fileName);
 
+    // Add cache-busting query parameter to force CDN/browser to fetch new image
+    const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
+
     // Update user profile if main image
     if (type === 'main') {
       const { error: updateError } = await supabase
         .from('users')
-        .update({ profile_image_url: publicUrl })
+        .update({ profile_image_url: cacheBustedUrl })
         .eq('provider_id', authUser.id);
 
       if (updateError) {
@@ -121,7 +124,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ url: publicUrl });
+    return NextResponse.json({ url: cacheBustedUrl });
   } catch (error) {
     console.error('[POST /api/user/profile/image]', error);
     return NextResponse.json(
