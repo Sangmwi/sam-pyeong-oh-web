@@ -1,25 +1,40 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { User } from '@/lib/types';
 import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import FormSection from '@/components/ui/FormSection';
 import { Plus, Loader2 } from 'lucide-react';
-import { useUploadProfileImage } from '@/lib/hooks/useProfile';
 import { compressImage, isImageFile, formatFileSize } from '@/lib/utils/imageCompression';
 
 interface ProfilePhotoUploadSectionProps {
   user: User;
+  onMainPhotoChange?: (file: File | null) => void;
+  onAdditionalPhotosChange?: (index: number, file: File | null) => void;
 }
 
-export default function ProfilePhotoUploadSection({ user }: ProfilePhotoUploadSectionProps) {
+export default function ProfilePhotoUploadSection({
+  user,
+  onMainPhotoChange,
+  onAdditionalPhotosChange
+}: ProfilePhotoUploadSectionProps) {
   const [mainPhoto, setMainPhoto] = useState(user.profileImage);
   const [additionalPhotos, setAdditionalPhotos] = useState<(string | null)[]>([null, null, null]);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   const mainPhotoInputRef = useRef<HTMLInputElement>(null);
   const additionalPhotoInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const uploadImage = useUploadProfileImage();
+  // Store blob URLs for cleanup
+  const blobUrlsRef = useRef<Set<string>>(new Set());
+
+  // Cleanup blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      blobUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+      blobUrlsRef.current.clear();
+    };
+  }, []);
 
   const handleMainPhotoUpload = () => {
     mainPhotoInputRef.current?.click();
@@ -39,25 +54,19 @@ export default function ProfilePhotoUploadSection({ user }: ProfilePhotoUploadSe
       return;
     }
 
-    // Create optimistic preview URL immediately
-    const previewUrl = URL.createObjectURL(file);
-    const previousPhoto = mainPhoto;
-    setMainPhoto(previewUrl);
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('파일 크기는 10MB 이하여야 합니다.');
+      return;
+    }
+
+    setIsCompressing(true);
 
     try {
-      // 압축 전 파일 크기 체크 (10MB 초과 시 거부)
-      if (file.size > 10 * 1024 * 1024) {
-        // Revert on error
-        URL.revokeObjectURL(previewUrl);
-        setMainPhoto(previousPhoto);
-        alert('파일 크기는 10MB 이하여야 합니다.');
-        return;
-      }
-
       const originalSize = formatFileSize(file.size);
       console.log(`압축 전 크기: ${originalSize}`);
 
-      // 이미지 압축 (1MB, 1920px, 80% 품질)
+      // Compress image
       const compressedFile = await compressImage(file, {
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,
@@ -67,18 +76,28 @@ export default function ProfilePhotoUploadSection({ user }: ProfilePhotoUploadSe
       const compressedSize = formatFileSize(compressedFile.size);
       console.log(`압축 후 크기: ${compressedSize}`);
 
-      // 압축된 파일 업로드
-      const imageUrl = await uploadImage.mutateAsync({ file: compressedFile, type: 'main' });
+      // Create local preview URL
+      const previewUrl = URL.createObjectURL(compressedFile);
 
-      // Replace preview with CDN URL and clean up blob URL
-      URL.revokeObjectURL(previewUrl);
-      setMainPhoto(imageUrl);
+      // Clean up old blob URL if exists
+      if (mainPhoto && mainPhoto.startsWith('blob:')) {
+        URL.revokeObjectURL(mainPhoto);
+        blobUrlsRef.current.delete(mainPhoto);
+      }
+
+      // Store new blob URL for cleanup
+      blobUrlsRef.current.add(previewUrl);
+
+      // Update UI with preview
+      setMainPhoto(previewUrl);
+
+      // Notify parent component with compressed file
+      onMainPhotoChange?.(compressedFile);
     } catch (error) {
-      console.error('Failed to upload main photo:', error);
-      // Revert to previous photo on error
-      URL.revokeObjectURL(previewUrl);
-      setMainPhoto(previousPhoto);
-      alert('사진 업로드에 실패했습니다. 다시 시도해주세요.');
+      console.error('Failed to compress photo:', error);
+      alert('사진 처리에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsCompressing(false);
     }
   };
 
@@ -95,29 +114,19 @@ export default function ProfilePhotoUploadSection({ user }: ProfilePhotoUploadSe
       return;
     }
 
-    // Create optimistic preview URL immediately
-    const previewUrl = URL.createObjectURL(file);
-    const previousPhoto = additionalPhotos[index];
-    const newPhotos = [...additionalPhotos];
-    newPhotos[index] = previewUrl;
-    setAdditionalPhotos(newPhotos);
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('파일 크기는 10MB 이하여야 합니다.');
+      return;
+    }
+
+    setIsCompressing(true);
 
     try {
-      // 압축 전 파일 크기 체크 (10MB 초과 시 거부)
-      if (file.size > 10 * 1024 * 1024) {
-        // Revert on error
-        URL.revokeObjectURL(previewUrl);
-        const revertedPhotos = [...additionalPhotos];
-        revertedPhotos[index] = previousPhoto;
-        setAdditionalPhotos(revertedPhotos);
-        alert('파일 크기는 10MB 이하여야 합니다.');
-        return;
-      }
-
       const originalSize = formatFileSize(file.size);
       console.log(`압축 전 크기: ${originalSize}`);
 
-      // 이미지 압축 (1MB, 1920px, 80% 품질)
+      // Compress image
       const compressedFile = await compressImage(file, {
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,
@@ -127,22 +136,31 @@ export default function ProfilePhotoUploadSection({ user }: ProfilePhotoUploadSe
       const compressedSize = formatFileSize(compressedFile.size);
       console.log(`압축 후 크기: ${compressedSize}`);
 
-      // 압축된 파일 업로드
-      const imageUrl = await uploadImage.mutateAsync({ file: compressedFile, type: 'additional' });
+      // Create local preview URL
+      const previewUrl = URL.createObjectURL(compressedFile);
 
-      // Replace preview with CDN URL and clean up blob URL
-      URL.revokeObjectURL(previewUrl);
-      const finalPhotos = [...additionalPhotos];
-      finalPhotos[index] = imageUrl;
-      setAdditionalPhotos(finalPhotos);
+      // Clean up old blob URL if exists
+      const oldPhoto = additionalPhotos[index];
+      if (oldPhoto && oldPhoto.startsWith('blob:')) {
+        URL.revokeObjectURL(oldPhoto);
+        blobUrlsRef.current.delete(oldPhoto);
+      }
+
+      // Store new blob URL for cleanup
+      blobUrlsRef.current.add(previewUrl);
+
+      // Update UI with preview
+      const newPhotos = [...additionalPhotos];
+      newPhotos[index] = previewUrl;
+      setAdditionalPhotos(newPhotos);
+
+      // Notify parent component with compressed file
+      onAdditionalPhotosChange?.(index, compressedFile);
     } catch (error) {
-      console.error('Failed to upload additional photo:', error);
-      // Revert to previous photo on error
-      URL.revokeObjectURL(previewUrl);
-      const revertedPhotos = [...additionalPhotos];
-      revertedPhotos[index] = previousPhoto;
-      setAdditionalPhotos(revertedPhotos);
-      alert('사진 업로드에 실패했습니다. 다시 시도해주세요.');
+      console.error('Failed to compress photo:', error);
+      alert('사진 처리에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsCompressing(false);
     }
   };
 
@@ -177,7 +195,7 @@ export default function ProfilePhotoUploadSection({ user }: ProfilePhotoUploadSe
         <button
           type="button"
           onClick={handleMainPhotoUpload}
-          disabled={uploadImage.isPending}
+          disabled={isCompressing}
           className="relative flex-[2] aspect-[2/3] rounded-2xl overflow-hidden bg-muted/50 border-2 border-dashed border-border hover:border-primary transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {mainPhoto ? (
@@ -190,7 +208,7 @@ export default function ProfilePhotoUploadSection({ user }: ProfilePhotoUploadSe
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-              {uploadImage.isPending ? (
+              {isCompressing ? (
                 <Loader2 className="w-8 h-8 text-primary animate-spin" />
               ) : (
                 <Plus className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -206,7 +224,7 @@ export default function ProfilePhotoUploadSection({ user }: ProfilePhotoUploadSe
               key={index}
               type="button"
               onClick={() => handleAdditionalPhotoUpload(index)}
-              disabled={uploadImage.isPending}
+              disabled={isCompressing}
               className="relative w-full flex-1 rounded-xl overflow-hidden bg-muted/50 border-2 border-dashed border-border hover:border-primary transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {photo ? (
@@ -219,7 +237,7 @@ export default function ProfilePhotoUploadSection({ user }: ProfilePhotoUploadSe
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  {uploadImage.isPending ? (
+                  {isCompressing ? (
                     <Loader2 className="w-6 h-6 text-primary animate-spin" />
                   ) : (
                     <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />

@@ -108,22 +108,9 @@ export async function POST(request: NextRequest) {
     // Add cache-busting query parameter to force CDN/browser to fetch new image
     const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
 
-    // Update user profile if main image
-    if (type === 'main') {
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ profile_image_url: cacheBustedUrl })
-        .eq('provider_id', authUser.id);
-
-      if (updateError) {
-        console.error('[Profile Update Error]', updateError);
-        return NextResponse.json(
-          { error: 'Failed to update profile image' },
-          { status: 500 }
-        );
-      }
-    }
-
+    // Return the URL without updating DB
+    // The frontend will handle DB update through the profile update mutation
+    // This allows for atomic saves (all profile data saved together)
     return NextResponse.json({ url: cacheBustedUrl });
   } catch (error) {
     console.error('[POST /api/user/profile/image]', error);
