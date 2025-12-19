@@ -6,9 +6,11 @@ import { useCurrentUserProfile, useUpdateProfile, useProfileProgress } from '@/l
 import { ArrowLeft } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 import ProfilePhotoUploadSection from '@/components/profile/edit/ProfilePhotoUploadSection';
+import ProfileNicknameInput from '@/components/profile/edit/ProfileNicknameInput';
 import ProfileBioInput from '@/components/profile/edit/ProfileBioInput';
 import ProfileHeightWeightInput from '@/components/profile/edit/ProfileHeightWeightInput';
 import ProfileInbodyInput from '@/components/profile/edit/ProfileInbodyInput';
+import ProfileSmokingInput from '@/components/profile/edit/ProfileSmokingInput';
 import ProfileLocationsInput from '@/components/profile/edit/ProfileLocationsInput';
 import ProfileInterestsInput from '@/components/profile/edit/ProfileInterestsInput';
 
@@ -19,12 +21,14 @@ export default function ProfileEditPage() {
 
   // Form state - 모든 입력 필드를 한 곳에서 관리
   const [formData, setFormData] = useState({
+    nickname: '',
     bio: '',
     height: '',
     weight: '',
     muscleMass: '',
     bodyFatPercentage: '',
     showInbodyPublic: true,
+    isSmoker: undefined as boolean | undefined,
     interestedLocations: [] as string[],
     interestedExercises: [] as string[],
   });
@@ -33,12 +37,14 @@ export default function ProfileEditPage() {
   useEffect(() => {
     if (user) {
       setFormData({
+        nickname: user.nickname || '',
         bio: user.bio || '',
         height: user.height?.toString() || '',
         weight: user.weight?.toString() || '',
         muscleMass: user.muscleMass?.toString() || '',
         bodyFatPercentage: user.bodyFatPercentage?.toString() || '',
         showInbodyPublic: user.showInbodyPublic ?? true,
+        isSmoker: user.isSmoker,
         interestedLocations: user.interestedLocations || [],
         interestedExercises: user.interestedExercises || [],
       });
@@ -57,12 +63,14 @@ export default function ProfileEditPage() {
 
     // Form 데이터 변환 및 검증
     const updates: any = {
+      nickname: formData.nickname.trim() || undefined,
       bio: formData.bio.trim() || undefined,
       height: formData.height ? Number(formData.height) : undefined,
       weight: formData.weight ? Number(formData.weight) : undefined,
       muscleMass: formData.muscleMass ? Number(formData.muscleMass) : undefined,
       bodyFatPercentage: formData.bodyFatPercentage ? Number(formData.bodyFatPercentage) : undefined,
       showInbodyPublic: formData.showInbodyPublic,
+      isSmoker: formData.isSmoker,
       interestedLocations: formData.interestedLocations,
       interestedExercises: formData.interestedExercises,
     };
@@ -140,6 +148,12 @@ export default function ProfileEditPage() {
         {/* Profile Photo Upload */}
         <ProfilePhotoUploadSection user={user} />
 
+        {/* Nickname Input */}
+        <ProfileNicknameInput
+          value={formData.nickname}
+          onChange={(value) => setFormData({ ...formData, nickname: value })}
+        />
+
         {/* Bio Input */}
         <ProfileBioInput
           value={formData.bio}
@@ -162,6 +176,12 @@ export default function ProfileEditPage() {
           onMuscleMassChange={(value) => setFormData({ ...formData, muscleMass: value })}
           onBodyFatPercentageChange={(value) => setFormData({ ...formData, bodyFatPercentage: value })}
           onShowInbodyPublicChange={(value) => setFormData({ ...formData, showInbodyPublic: value })}
+        />
+
+        {/* Smoking Input */}
+        <ProfileSmokingInput
+          value={formData.isSmoker}
+          onChange={(value) => setFormData({ ...formData, isSmoker: value })}
         />
 
         {/* Favorite Locations Input */}

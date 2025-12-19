@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { User } from '@/lib/types';
 import ImageWithFallback from '@/components/ui/ImageWithFallback';
+import FormSection from '@/components/ui/FormSection';
 import { Plus, Loader2 } from 'lucide-react';
 import { useUploadProfileImage } from '@/lib/hooks/useProfile';
 
@@ -83,12 +84,10 @@ export default function ProfilePhotoUploadSection({ user }: ProfilePhotoUploadSe
   };
 
   return (
-    <section className="space-y-3">
-      <h2 className="text-xl font-bold text-card-foreground">프로필</h2>
-      <p className="text-xs text-muted-foreground">
-        나를 가장 잘 표현할 수 있는 사진을 선택하세요!
-      </p>
-
+    <FormSection
+      title="프로필"
+      description="나를 가장 잘 표현할 수 있는 사진을 선택하세요!"
+    >
       {/* Hidden file inputs */}
       <input
         ref={mainPhotoInputRef}
@@ -168,6 +167,6 @@ export default function ProfilePhotoUploadSection({ user }: ProfilePhotoUploadSe
           ))}
         </div>
       </div>
-    </section>
+    </FormSection>
   );
 }
