@@ -67,17 +67,22 @@ export default function ProfilePhotoUploadSection({
       console.log(`압축 전 크기: ${originalSize}`);
 
       // Compress image
-      const compressedFile = await compressImage(file, {
+      const result = await compressImage(file, {
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,
         quality: 0.8,
       });
 
-      const compressedSize = formatFileSize(compressedFile.size);
+      if (!result.success) {
+        alert(result.error || '사진 처리에 실패했습니다.');
+        return;
+      }
+
+      const compressedSize = formatFileSize(result.compressedSize);
       console.log(`압축 후 크기: ${compressedSize}`);
 
       // Create local preview URL
-      const previewUrl = URL.createObjectURL(compressedFile);
+      const previewUrl = URL.createObjectURL(result.file);
 
       // Clean up old blob URL if exists
       if (mainPhoto && mainPhoto.startsWith('blob:')) {
@@ -92,7 +97,12 @@ export default function ProfilePhotoUploadSection({
       setMainPhoto(previewUrl);
 
       // Notify parent component with compressed file
-      onMainPhotoChange?.(compressedFile);
+      onMainPhotoChange?.(result.file);
+
+      // Show warning if any
+      if (result.warning) {
+        console.warn(result.warning);
+      }
     } catch (error) {
       console.error('Failed to compress photo:', error);
       alert('사진 처리에 실패했습니다. 다시 시도해주세요.');
@@ -127,17 +137,22 @@ export default function ProfilePhotoUploadSection({
       console.log(`압축 전 크기: ${originalSize}`);
 
       // Compress image
-      const compressedFile = await compressImage(file, {
+      const result = await compressImage(file, {
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,
         quality: 0.8,
       });
 
-      const compressedSize = formatFileSize(compressedFile.size);
+      if (!result.success) {
+        alert(result.error || '사진 처리에 실패했습니다.');
+        return;
+      }
+
+      const compressedSize = formatFileSize(result.compressedSize);
       console.log(`압축 후 크기: ${compressedSize}`);
 
       // Create local preview URL
-      const previewUrl = URL.createObjectURL(compressedFile);
+      const previewUrl = URL.createObjectURL(result.file);
 
       // Clean up old blob URL if exists
       const oldPhoto = additionalPhotos[index];
@@ -155,7 +170,12 @@ export default function ProfilePhotoUploadSection({
       setAdditionalPhotos(newPhotos);
 
       // Notify parent component with compressed file
-      onAdditionalPhotosChange?.(index, compressedFile);
+      onAdditionalPhotosChange?.(index, result.file);
+
+      // Show warning if any
+      if (result.warning) {
+        console.warn(result.warning);
+      }
     } catch (error) {
       console.error('Failed to compress photo:', error);
       alert('사진 처리에 실패했습니다. 다시 시도해주세요.');

@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useProfileImagesDraft, DraftImage } from '@/lib/hooks';
+import { useProfileImagesDraft, DraftImage, AddImageResult } from '@/lib/hooks';
 import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import FormSection from '@/components/ui/FormSection';
-import { Plus, Loader2, X, GripVertical, Star, Move } from 'lucide-react';
+import { Plus, Loader2, X, GripVertical, Star, Move, AlertCircle } from 'lucide-react';
 
 // ============================================================
 // Constants
@@ -92,6 +92,52 @@ function TouchDragIndicator() {
   return (
     <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
       <Move className="w-8 h-8 text-primary" />
+    </div>
+  );
+}
+
+function ErrorToast({ message, onClose }: { message: string; onClose: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 5000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className="fixed bottom-20 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 fade-in duration-200">
+      <div className="bg-destructive text-destructive-foreground px-4 py-3 rounded-lg shadow-lg flex items-start gap-3">
+        <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+        <p className="text-sm flex-1">{message}</p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="shrink-0 hover:opacity-80"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function WarningToast({ message, onClose }: { message: string; onClose: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 4000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className="fixed bottom-20 left-4 right-4 z-50 animate-in slide-in-from-bottom-4 fade-in duration-200">
+      <div className="bg-yellow-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-start gap-3">
+        <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+        <p className="text-sm flex-1">{message}</p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="shrink-0 hover:opacity-80"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -191,6 +237,10 @@ export default function ProfilePhotoGallery({
   const draft = useProfileImagesDraft(initialImages);
   const { images, isProcessing, addImage, removeImage, reorderImages } = draft;
 
+  // ========== Toast State ==========
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [warningMessage, setWarningMessage] = useState<string | null>(null);
+
   // ========== Drag State ==========
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -249,7 +299,14 @@ export default function ProfilePhotoGallery({
       const file = e.target.files?.[0];
       if (!file) return;
       e.target.value = '';
-      await addImage(file, uploadIndexRef.current);
+
+      const result: AddImageResult = await addImage(file, uploadIndexRef.current);
+
+      if (!result.success && result.error) {
+        setErrorMessage(result.error);
+      } else if (result.warning) {
+        setWarningMessage(result.warning);
+      }
     },
     [addImage]
   );
@@ -448,6 +505,22 @@ export default function ProfilePhotoGallery({
         <div
           className="fixed inset-0 z-40"
           onClick={() => setLongPressIndex(null)}
+        />
+      )}
+
+      {/* Error Toast */}
+      {errorMessage && (
+        <ErrorToast
+          message={errorMessage}
+          onClose={() => setErrorMessage(null)}
+        />
+      )}
+
+      {/* Warning Toast */}
+      {warningMessage && (
+        <WarningToast
+          message={warningMessage}
+          onClose={() => setWarningMessage(null)}
         />
       )}
     </FormSection>
