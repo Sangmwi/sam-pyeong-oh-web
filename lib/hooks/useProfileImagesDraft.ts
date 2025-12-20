@@ -170,20 +170,22 @@ export function useProfileImagesDraft(
         setImages((prev) => {
           const newImages = [...prev];
 
-          // 해당 인덱스에 이미지 삽입
-          if (index >= newImages.length) {
-            newImages.push(newDraft);
-          } else {
-            // 기존 이미지가 있으면 교체
+          // 기존 이미지가 있는 슬롯이면 교체
+          if (index < newImages.length && newImages[index]) {
             const existing = newImages[index];
-            if (existing?.originalUrl) {
+            if (existing.originalUrl) {
               setDeletedUrls((urls) => [...urls, existing.originalUrl!]);
             }
-            if (existing?.displayUrl.startsWith('blob:')) {
+            if (existing.displayUrl.startsWith('blob:')) {
               URL.revokeObjectURL(existing.displayUrl);
               blobUrlsRef.current.delete(existing.displayUrl);
             }
+            // 해당 위치에 새 이미지로 교체
             newImages[index] = newDraft;
+          } else {
+            // 빈 슬롯이면 배열 끝에 추가
+            // (UI는 slots 배열로 4칸을 고정 렌더링하므로 순차적으로 쌓임)
+            newImages.push(newDraft);
           }
 
           return newImages.slice(0, maxImages);
