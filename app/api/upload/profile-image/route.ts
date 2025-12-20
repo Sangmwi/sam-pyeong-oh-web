@@ -38,8 +38,13 @@ export const POST = withAuth(async (request: NextRequest, { authUser, supabase }
     );
   }
 
-  // Generate unique filename
-  const fileExt = file.name.split('.').pop();
+  // Generate unique filename (contentType 기반으로 확장자 결정)
+  const mimeToExt: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+  };
+  const fileExt = mimeToExt[file.type] || file.name.split('.').pop() || 'jpg';
   const fileName = `${authUser.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
 
   // Upload to Supabase Storage

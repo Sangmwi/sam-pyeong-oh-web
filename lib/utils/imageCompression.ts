@@ -131,8 +131,9 @@ export async function compressImage(
             console.warn(`압축 후에도 파일이 ${formatFileSize(blob.size)}입니다. 서버 업로드를 진행합니다.`);
           }
 
-          // File 객체로 변환
-          const compressedFile = new File([blob], file.name, {
+          // File 객체로 변환 (JPEG로 압축했으므로 확장자도 .jpg로 변경)
+          const baseName = file.name.replace(/\.[^.]+$/, '');
+          const compressedFile = new File([blob], `${baseName}.jpg`, {
             type: 'image/jpeg',
             lastModified: Date.now(),
           });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image, { ImageProps } from 'next/image';
 import { ImageOff } from 'lucide-react';
 
@@ -51,6 +51,15 @@ export default function ImageWithFallback({
 }: ImageWithFallbackProps) {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // src가 변경되면 에러/로딩 상태 초기화
+  useEffect(() => {
+    setError(false);
+    setLoading(true);
+  }, [src]);
+
+  // Supabase Storage URL인 경우 최적화 비활성화 (Next.js 프록시 우회)
+  const isSupabaseUrl = src?.includes('supabase.co/storage');
 
   // src가 없거나 에러 발생 시
   if (!src || error) {
@@ -104,6 +113,7 @@ export default function ImageWithFallback({
       alt={alt}
       fill={fill}
       sizes={sizes}
+      unoptimized={isSupabaseUrl}
       className={`${className} ${loading ? 'bg-muted animate-pulse' : ''}`}
       onLoad={() => setLoading(false)}
       onError={() => setError(true)}

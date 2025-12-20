@@ -100,6 +100,12 @@ export function useProfileImagesDraft(
   const blobUrlsRef = useRef<Set<string>>(new Set());
   const initialImagesRef = useRef<string[]>(initialImages);
 
+  // 최신 상태를 항상 참조하기 위한 refs
+  const imagesRef = useRef<DraftImage[]>(images);
+  const deletedUrlsRef = useRef<string[]>(deletedUrls);
+  imagesRef.current = images;
+  deletedUrlsRef.current = deletedUrls;
+
   // 초기 이미지 변경 시 리셋
   useEffect(() => {
     const hasInitialChanged =
@@ -247,19 +253,33 @@ export function useProfileImagesDraft(
     setDeletedUrls([]);
   }, [images]);
 
-  // 저장용 변경사항 반환
+  // 저장용 변경사항 반환 (항상 최신 상태를 ref에서 읽음)
   const getChanges = useCallback((): ImageChanges => {
-    const newImages = images
+    const currentImages = imagesRef.current;
+    const currentDeletedUrls = deletedUrlsRef.current;
+
+    const newImages = currentImages
       .filter((img) => img.isNew && img.file)
       .map((img) => ({ file: img.file!, id: img.id }));
 
+    // hasChanges 로직 인라인
+    const hasAnyChanges = (() => {
+      if (currentDeletedUrls.length > 0) return true;
+      if (currentImages.some((img) => img.isNew)) return true;
+
+      const currentUrls = currentImages.map((img) => img.originalUrl).filter(Boolean);
+      if (currentUrls.length !== initialImagesRef.current.length) return true;
+
+      return currentUrls.some((url, i) => url !== initialImagesRef.current[i]);
+    })();
+
     return {
       newImages,
-      deletedUrls,
-      finalOrder: images,
-      hasChanges: hasChanges(),
+      deletedUrls: currentDeletedUrls,
+      finalOrder: currentImages,
+      hasChanges: hasAnyChanges,
     };
-  }, [images, deletedUrls, hasChanges]);
+  }, []);
 
   return {
     images,
