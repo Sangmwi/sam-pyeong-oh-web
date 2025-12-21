@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { validateImageFile, formatFileSize } from '@/lib/utils/imageValidation';
+import { validateImageFile, fileToDataUrl } from '@/lib/utils/imageValidation';
 
 // ============================================================
 // Types
@@ -36,6 +36,11 @@ export interface AddImageResult {
   error?: string;
 }
 
+export interface AddImageAsyncResult {
+  success: boolean;
+  error?: string;
+}
+
 interface UseProfileImagesDraftOptions {
   maxImages?: number;
 }
@@ -59,9 +64,9 @@ const createDraftFromUrl = (url: string): DraftImage => ({
   isNew: false,
 });
 
-const createDraftFromFile = (file: File, blobUrl: string): DraftImage => ({
+const createDraftFromFile = (file: File, dataUrl: string): DraftImage => ({
   id: generateId(),
-  displayUrl: blobUrl,
+  displayUrl: dataUrl,
   file,
   isNew: true,
 });
@@ -104,9 +109,6 @@ export function useProfileImagesDraft(
 
   // ========== Refs ==========
 
-  /** Blob URL 관리 (메모리 누수 방지) */
-  const blobUrlsRef = useRef<Set<string>>(new Set());
-
   /** 초기 이미지 URL 저장 (변경 감지용) */
   const initialImagesRef = useRef<string[]>(initialImages);
 
@@ -132,13 +134,7 @@ export function useProfileImagesDraft(
     }
   }, [initialImages]);
 
-  // Cleanup: 언마운트 시 Blob URL 해제
-  useEffect(() => {
-    return () => {
-      blobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
-      blobUrlsRef.current.clear();
-    };
-  }, []);
+  // Data URL은 GC가 자동 처리하므로 cleanup 불필요
 
   // ========== Computed ==========
 
@@ -155,10 +151,14 @@ export function useProfileImagesDraft(
   // ========== Actions ==========
 
   /**
-   * 이미지 추가 (동기 - 압축 없음)
+   * 이미지 추가 (비동기 - Data URL 변환)
+   *
+   * Blob URL 대신 Data URL을 사용하여 웹뷰 호환성 확보
+   * - Data URL: 데이터 자체가 URL에 포함 → 즉시 접근 가능
+   * - 웹뷰에서도 안정적으로 미리보기 표시
    */
   const addImage = useCallback(
-    (file: File, index: number): AddImageResult => {
+    async (file: File, index: number): Promise<AddImageAsyncResult> => {
       // 1. 파일 검증
       const validation = validateImageFile(file);
       if (!validation.valid) {
@@ -173,39 +173,41 @@ export function useProfileImagesDraft(
         };
       }
 
-      // 3. Blob URL 생성 (압축 없이 원본 사용)
-      const blobUrl = URL.createObjectURL(file);
-      blobUrlsRef.current.add(blobUrl);
+      try {
+        // 3. Data URL 생성 (웹뷰 호환성 확보)
+        const dataUrl = await fileToDataUrl(file);
 
-      const newDraft = createDraftFromFile(file, blobUrl);
+        const newDraft = createDraftFromFile(file, dataUrl);
 
-      // 4. 상태 업데이트
-      setImages((prev) => {
-        const newImages = [...prev];
+        // 4. 상태 업데이트
+        setImages((prev) => {
+          const newImages = [...prev];
 
-        // 기존 이미지가 있는 슬롯이면 교체
-        if (index < newImages.length && newImages[index]) {
-          const existing = newImages[index];
+          // 기존 이미지가 있는 슬롯이면 교체
+          if (index < newImages.length && newImages[index]) {
+            const existing = newImages[index];
 
-          // 기존 이미지 삭제 처리
-          if (existing.originalUrl) {
-            setDeletedUrls((urls) => [...urls, existing.originalUrl!]);
+            // 기존 이미지 삭제 처리
+            if (existing.originalUrl) {
+              setDeletedUrls((urls) => [...urls, existing.originalUrl!]);
+            }
+
+            newImages[index] = newDraft;
+          } else {
+            // 빈 슬롯이면 배열 끝에 추가
+            newImages.push(newDraft);
           }
-          if (existing.displayUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(existing.displayUrl);
-            blobUrlsRef.current.delete(existing.displayUrl);
-          }
 
-          newImages[index] = newDraft;
-        } else {
-          // 빈 슬롯이면 배열 끝에 추가
-          newImages.push(newDraft);
-        }
+          return newImages.slice(0, maxImages);
+        });
 
-        return newImages.slice(0, maxImages);
-      });
-
-      return { success: true };
+        return { success: true };
+      } catch (err) {
+        return {
+          success: false,
+          error: err instanceof Error ? err.message : '파일 처리에 실패했습니다.',
+        };
+      }
     },
     [images.length, maxImages]
   );
@@ -223,11 +225,7 @@ export function useProfileImagesDraft(
         setDeletedUrls((urls) => [...urls, target.originalUrl!]);
       }
 
-      // Blob URL 정리
-      if (target.displayUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(target.displayUrl);
-        blobUrlsRef.current.delete(target.displayUrl);
-      }
+      // Data URL은 GC가 자동 처리하므로 별도 cleanup 불필요
 
       return prev.filter((_, i) => i !== index);
     });
@@ -251,17 +249,10 @@ export function useProfileImagesDraft(
    * 초기 상태로 복원
    */
   const reset = useCallback(() => {
-    // Blob URL 정리
-    images.forEach((img) => {
-      if (img.displayUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(img.displayUrl);
-        blobUrlsRef.current.delete(img.displayUrl);
-      }
-    });
-
+    // Data URL은 GC가 자동 처리하므로 별도 cleanup 불필요
     setImages(initialImagesRef.current.map(createDraftFromUrl));
     setDeletedUrls([]);
-  }, [images]);
+  }, []);
 
   /**
    * 저장용 변경사항 반환 (항상 최신 상태를 ref에서 읽음)

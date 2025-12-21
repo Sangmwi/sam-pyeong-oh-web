@@ -217,3 +217,38 @@ export function validateImageFiles(
   }
   return { valid: true };
 }
+
+/**
+ * File을 Data URL로 변환
+ *
+ * Blob URL 대신 Data URL을 사용하면:
+ * - 데이터가 URL 자체에 포함되어 있어 즉시 접근 가능
+ * - 웹뷰 환경에서도 안정적으로 동작
+ * - 메모리 해제 필요 없음 (문자열이므로 GC가 자동 처리)
+ *
+ * 단점:
+ * - Base64 인코딩으로 파일 크기 약 33% 증가
+ * - 큰 파일의 경우 메모리 사용량 증가
+ *
+ * @param file - 변환할 파일
+ * @returns Data URL 문자열
+ */
+export function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('파일을 읽을 수 없습니다.'));
+      }
+    };
+
+    reader.onerror = () => {
+      reject(new Error('파일 읽기에 실패했습니다.'));
+    };
+
+    reader.readAsDataURL(file);
+  });
+}

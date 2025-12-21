@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useProfileImagesDraft, DraftImage, AddImageResult } from '@/lib/hooks';
+import { useProfileImagesDraft, DraftImage, AddImageAsyncResult } from '@/lib/hooks';
 import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import FormSection from '@/components/ui/FormSection';
 import { Plus, Loader2, X, GripVertical, Star, Move, AlertCircle } from 'lucide-react';
@@ -271,13 +271,13 @@ export default function ProfilePhotoGallery({
   }, []);
 
   const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
       e.target.value = '';
 
-      // 동기 함수 (압축 없음)
-      const result: AddImageResult = addImage(file, uploadIndexRef.current);
+      // 비동기 함수 (Data URL 변환)
+      const result: AddImageAsyncResult = await addImage(file, uploadIndexRef.current);
 
       if (!result.success && result.error) {
         setErrorMessage(result.error);

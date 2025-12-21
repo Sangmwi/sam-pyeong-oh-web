@@ -16,7 +16,7 @@ interface ImageWithFallbackProps extends Omit<ImageProps, 'src' | 'alt'> {
 /**
  * 이미지 로드 실패 시 폴백을 표시하는 Image 컴포넌트
  *
- * - Blob URL: native <img> 사용 (즉시 로드, 최적화 불필요)
+ * - Data URL / Blob URL: native <img> 사용 (즉시 로드, 최적화 불필요)
  * - Server URL: Next.js Image 사용 (최적화 + 캐싱)
  * - Supabase URL: unoptimized 모드 (프록시 우회)
  */
@@ -40,8 +40,8 @@ export default function ImageWithFallback({
     if (prevSrcRef.current !== src) {
       prevSrcRef.current = src;
       setError(false);
-      // Blob URL은 즉시 로드되므로 loading 상태 유지 불필요
-      if (src?.startsWith('blob:')) {
+      // Data URL / Blob URL은 즉시 로드되므로 loading 상태 유지 불필요
+      if (src?.startsWith('blob:') || src?.startsWith('data:')) {
         setLoading(false);
       } else {
         setLoading(true);
@@ -59,7 +59,7 @@ export default function ImageWithFallback({
   }, []);
 
   // URL 타입 감지
-  const isBlobUrl = src?.startsWith('blob:');
+  const isLocalUrl = src?.startsWith('blob:') || src?.startsWith('data:');
   const isSupabaseUrl = src?.includes('supabase.co/storage');
 
   // src가 없거나 에러 발생 시
@@ -105,9 +105,9 @@ export default function ImageWithFallback({
     );
   }
 
-  // Blob URL: native <img> 사용 (Next.js 최적화 우회)
-  // 웹뷰에서 Next.js Image의 blob URL 처리 문제 해결
-  if (isBlobUrl) {
+  // Data URL / Blob URL: native <img> 사용 (Next.js 최적화 우회)
+  // 웹뷰에서 Next.js Image의 로컬 URL 처리 문제 해결
+  if (isLocalUrl) {
     if (fill) {
       return (
         // eslint-disable-next-line @next/next/no-img-element
