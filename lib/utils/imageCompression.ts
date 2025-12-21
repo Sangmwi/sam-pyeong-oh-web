@@ -300,7 +300,17 @@ export async function compressImage(
     // 압축 과정에서 에러 발생
     const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
 
-    // 원본으로 폴백 시도
+    // 이미지 로드 실패는 원본으로 fallback해도 표시 불가 → 에러 반환
+    const isLoadError = errorMessage.includes('로드할 수 없습니다');
+    if (isLoadError) {
+      return createResult(
+        false,
+        file,
+        '이 이미지는 현재 기기에서 지원하지 않는 형식입니다. 다른 이미지를 선택하거나, JPG/PNG로 변환 후 다시 시도해주세요.'
+      );
+    }
+
+    // 그 외 압축 오류는 원본으로 폴백 시도 (Canvas 오류 등)
     if (originalSize <= SERVER_MAX_SIZE_BYTES) {
       return createResult(
         true,
