@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useProfileImagesDraft, DraftImage, AddImageAsyncResult } from '@/lib/hooks';
+import { startFileRead, arrayBufferToDataUrl, validateImageFile } from '@/lib/utils/imageValidation';
 import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import FormSection from '@/components/ui/FormSection';
 import { Plus, Loader2, X, GripVertical, Star, Move, AlertCircle } from 'lucide-react';
@@ -275,19 +276,41 @@ export default function ProfilePhotoGallery({
       const file = e.target.files?.[0];
       if (!file) return;
 
-      // 🔥 중요: input 초기화를 파일 읽기 완료 후로 지연
-      // e.target.value = '' 를 먼저 하면 일부 WebView에서
-      // 파일 참조가 무효화되어 FileReader가 실패할 수 있음
       const inputElement = e.target;
+      const targetIndex = uploadIndexRef.current;
 
-      // 비동기 함수 (Data URL 변환)
-      const result: AddImageAsyncResult = await addImage(file, uploadIndexRef.current);
+      // 🔥 안드로이드 WebView content:// URI 권한 만료 문제 해결
+      // 이벤트 핸들러 내에서 즉시 파일 검증 + 읽기 시작
+      // 1. 파일 검증 (동기)
+      const validation = validateImageFile(file);
+      if (!validation.valid) {
+        inputElement.value = '';
+        setErrorMessage(validation.error || '파일 검증에 실패했습니다.');
+        return;
+      }
 
-      // 파일 읽기 완료 후 input 초기화 (같은 파일 재선택 허용)
-      inputElement.value = '';
+      // 2. 파일 읽기 즉시 시작 (비동기지만 읽기 "시작"은 동기적)
+      // readAsArrayBuffer 호출 시점에 content:// 권한이 유효해야 함
+      const { promise: readPromise } = startFileRead(file);
 
-      if (!result.success && result.error) {
-        setErrorMessage(result.error);
+      try {
+        // 3. 읽기 완료 대기
+        const arrayBuffer = await readPromise;
+
+        // 4. Data URL 변환 (이미 메모리에 복사된 데이터 사용)
+        const dataUrl = await arrayBufferToDataUrl(arrayBuffer, file.type || 'image/jpeg');
+
+        // 5. 훅에 직접 추가 (이미 검증 + 읽기 완료됨)
+        const result: AddImageAsyncResult = await addImage(file, targetIndex, dataUrl);
+
+        if (!result.success && result.error) {
+          setErrorMessage(result.error);
+        }
+      } catch (err) {
+        setErrorMessage(err instanceof Error ? err.message : '파일 처리에 실패했습니다.');
+      } finally {
+        // 파일 읽기 완료 후 input 초기화 (같은 파일 재선택 허용)
+        inputElement.value = '';
       }
     },
     [addImage]

@@ -151,18 +151,29 @@ export function useProfileImagesDraft(
   // ========== Actions ==========
 
   /**
-   * 이미지 추가 (비동기 - Data URL 변환)
+   * 이미지 추가
    *
-   * Blob URL 대신 Data URL을 사용하여 웹뷰 호환성 확보
-   * - Data URL: 데이터 자체가 URL에 포함 → 즉시 접근 가능
-   * - 웹뷰에서도 안정적으로 미리보기 표시
+   * @param file - 파일 객체
+   * @param index - 추가할 슬롯 인덱스
+   * @param preloadedDataUrl - 미리 로드된 Data URL (안드로이드 WebView 호환용)
+   *                           제공되면 파일 읽기를 건너뜀
+   *
+   * 🔥 안드로이드 WebView에서는 이벤트 핸들러 내에서 즉시 파일 읽기를 시작해야 함
+   * content:// URI 권한이 만료되기 전에 읽기를 시작해야 하기 때문
+   * 따라서 preloadedDataUrl을 미리 제공하는 것을 권장
    */
   const addImage = useCallback(
-    async (file: File, index: number): Promise<AddImageAsyncResult> => {
-      // 1. 파일 검증
-      const validation = validateImageFile(file);
-      if (!validation.valid) {
-        return { success: false, error: validation.error };
+    async (
+      file: File,
+      index: number,
+      preloadedDataUrl?: string
+    ): Promise<AddImageAsyncResult> => {
+      // 1. 파일 검증 (preloadedDataUrl이 있으면 이미 검증됨)
+      if (!preloadedDataUrl) {
+        const validation = validateImageFile(file);
+        if (!validation.valid) {
+          return { success: false, error: validation.error };
+        }
       }
 
       // 2. 최대 개수 체크
@@ -174,8 +185,8 @@ export function useProfileImagesDraft(
       }
 
       try {
-        // 3. Data URL 생성 (웹뷰 호환성 확보)
-        const dataUrl = await fileToDataUrl(file);
+        // 3. Data URL 획득 (미리 로드되었거나 새로 읽기)
+        const dataUrl = preloadedDataUrl || (await fileToDataUrl(file));
 
         const newDraft = createDraftFromFile(file, dataUrl);
 

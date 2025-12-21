@@ -219,50 +219,50 @@ export function validateImageFiles(
 }
 
 /**
- * File을 Data URL로 변환
+ * File을 Data URL로 변환 (동기적 시작)
  *
- * Blob URL 대신 Data URL을 사용하면:
- * - 데이터가 URL 자체에 포함되어 있어 즉시 접근 가능
- * - 웹뷰 환경에서도 안정적으로 동작
- * - 메모리 해제 필요 없음 (문자열이므로 GC가 자동 처리)
- *
- * 단점:
- * - Base64 인코딩으로 파일 크기 약 33% 증가
- * - 큰 파일의 경우 메모리 사용량 증가
+ * 🔥 중요: 안드로이드 WebView에서 content:// URI 권한 만료 문제
+ * - 파일 피커가 반환하는 File 객체는 content:// URI 기반
+ * - 이 URI의 읽기 권한은 "임시"이며 언제든 만료될 수 있음
+ * - 해결: 이벤트 핸들러 내에서 즉시 FileReader.readAsArrayBuffer() 호출
+ * - readAsArrayBuffer는 호출 즉시 파일 읽기를 "시작"함
+ * - 일단 읽기가 시작되면 완료까지 권한이 유지됨
  *
  * @param file - 변환할 파일
- * @returns Data URL 문자열
+ * @returns { reader, promise } - reader는 즉시 읽기 시작됨, promise는 결과
  */
-export function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    // 파일 유효성 먼저 체크
-    if (!file || file.size === 0) {
-      reject(new Error('유효하지 않은 파일입니다.'));
-      return;
-    }
+export function startFileRead(file: File): {
+  reader: FileReader;
+  promise: Promise<ArrayBuffer>;
+} {
+  const reader = new FileReader();
 
-    const reader = new FileReader();
-
-    // 타임아웃 설정 (10초) - 웹뷰에서 파일 접근이 지연될 수 있음
+  const promise = new Promise<ArrayBuffer>((resolve, reject) => {
+    // 타임아웃 설정 (15초)
     const timeout = setTimeout(() => {
       reader.abort();
       reject(new Error('파일 읽기 시간이 초과되었습니다. 다시 시도해주세요.'));
-    }, 10000);
+    }, 15000);
 
     reader.onload = () => {
       clearTimeout(timeout);
-      if (typeof reader.result === 'string') {
-        resolve(reader.result);
+      const result = reader.result as ArrayBuffer;
+      if (result && result.byteLength > 0) {
+        resolve(result);
       } else {
-        reject(new Error('파일을 읽을 수 없습니다.'));
+        reject(new Error('파일 내용을 읽을 수 없습니다.'));
       }
     };
 
     reader.onerror = () => {
       clearTimeout(timeout);
-      // 상세 에러 정보 제공
       const errorCode = reader.error?.name || 'Unknown';
-      const errorMessage = reader.error?.message || '';
+      console.error('[startFileRead] FileReader error:', {
+        errorCode,
+        errorMessage: reader.error?.message,
+        fileName: file.name,
+        fileSize: file.size,
+      });
 
       if (errorCode === 'NotReadableError') {
         reject(new Error('파일에 접근할 수 없습니다. 다른 사진을 선택해주세요.'));
@@ -271,21 +271,70 @@ export function fileToDataUrl(file: File): Promise<string> {
       } else {
         reject(new Error(`파일 읽기에 실패했습니다. (${errorCode})`));
       }
-
-      console.error('[fileToDataUrl] FileReader error:', { errorCode, errorMessage, fileName: file.name, fileSize: file.size });
     };
 
     reader.onabort = () => {
       clearTimeout(timeout);
       reject(new Error('파일 읽기가 취소되었습니다.'));
     };
+  });
 
-    try {
-      reader.readAsDataURL(file);
-    } catch (e) {
-      clearTimeout(timeout);
-      console.error('[fileToDataUrl] readAsDataURL exception:', e);
-      reject(new Error('파일을 읽을 수 없습니다. 다른 사진을 선택해주세요.'));
+  // 🔥 즉시 읽기 시작 - 이 시점에 content:// 권한이 유효해야 함
+  try {
+    reader.readAsArrayBuffer(file);
+  } catch (e) {
+    console.error('[startFileRead] readAsArrayBuffer exception:', e);
+    // 동기적으로 실패한 경우
+  }
+
+  return { reader, promise };
+}
+
+/**
+ * ArrayBuffer를 Data URL로 변환
+ */
+export function arrayBufferToDataUrl(
+  arrayBuffer: ArrayBuffer,
+  mimeType: string = 'image/jpeg'
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const blob = new Blob([arrayBuffer], { type: mimeType });
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('Data URL 변환에 실패했습니다.'));
+      }
+    };
+
+    reader.onerror = () => {
+      reject(new Error('Data URL 변환에 실패했습니다.'));
+    };
+
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * File을 Data URL로 변환 (레거시 호환용)
+ *
+ * ⚠️ 주의: 안드로이드 WebView에서 간헐적 실패 가능
+ * 가능하면 startFileRead + arrayBufferToDataUrl 조합 사용 권장
+ */
+export function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (!file || file.size === 0) {
+      reject(new Error('유효하지 않은 파일입니다.'));
+      return;
     }
+
+    const { promise } = startFileRead(file);
+
+    promise
+      .then((arrayBuffer) => arrayBufferToDataUrl(arrayBuffer, file.type || 'image/jpeg'))
+      .then(resolve)
+      .catch(reject);
   });
 }
