@@ -23,22 +23,29 @@ export function useSessionRefresh() {
     const supabase = createClient();
 
     const handleVisibilityChange = async () => {
+      console.log('[SessionRefresh] visibilitychange:', document.visibilityState);
+
       if (document.visibilityState !== 'visible') return;
 
       // 너무 잦은 갱신 방지 (최소 30초 간격)
       const now = Date.now();
-      if (now - lastRefreshRef.current < 30_000) return;
+      if (now - lastRefreshRef.current < 30_000) {
+        console.log('[SessionRefresh] Skipped (cooldown)');
+        return;
+      }
 
       lastRefreshRef.current = now;
 
       try {
-        const { error } = await supabase.auth.refreshSession();
+        console.log('[SessionRefresh] Refreshing session...');
+        const { data, error } = await supabase.auth.refreshSession();
         if (error) {
-          console.warn('[SessionRefresh] Failed to refresh:', error.message);
+          console.error('[SessionRefresh] Failed:', error.message);
+        } else {
+          console.log('[SessionRefresh] Success:', data.session ? 'session exists' : 'no session');
         }
       } catch (e) {
-        // 네트워크 오류 등은 무시 (다음 API 호출에서 처리됨)
-        console.warn('[SessionRefresh] Error:', e);
+        console.error('[SessionRefresh] Error:', e);
       }
     };
 
