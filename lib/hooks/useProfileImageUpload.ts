@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import type { ImageChanges, DraftImage } from './useProfileImagesDraft';
+import { authFetch } from '@/lib/utils/authFetch';
 
 // ============================================================
 // Types
@@ -38,6 +39,7 @@ const DEFAULT_DELETE_ENDPOINT = '/api/user/profile/image';
 
 /**
  * 단일 이미지 업로드
+ * authFetch 사용하여 401 에러 시 세션 갱신 후 재시도
  */
 async function uploadSingleImage(
   file: File,
@@ -46,9 +48,8 @@ async function uploadSingleImage(
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch(endpoint, {
+  const response = await authFetch(endpoint, {
     method: 'POST',
-    credentials: 'include',
     body: formData,
   });
 
@@ -63,15 +64,15 @@ async function uploadSingleImage(
 
 /**
  * 단일 이미지 삭제 (백그라운드)
+ * authFetch 사용하여 401 에러 시 세션 갱신 후 재시도
  */
 async function deleteSingleImage(
   imageUrl: string,
   endpoint: string
 ): Promise<void> {
-  await fetch(endpoint, {
+  await authFetch(endpoint, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
     body: JSON.stringify({ imageUrl }),
   });
 }
