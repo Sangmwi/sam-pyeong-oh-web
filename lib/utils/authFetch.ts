@@ -108,9 +108,34 @@ export async function authFetch(
   let lastResponse: Response | null = null;
   let retryCount = 0;
 
+  // 🔍 DEBUG: 요청 시작 로그
+  console.log(`[authFetch] 📤 ${options.method || 'GET'} ${url}`);
+
   while (retryCount <= maxRetries) {
-    const response = await fetch(url, mergedOptions);
+    let response: Response;
+
+    try {
+      response = await fetch(url, mergedOptions);
+    } catch (networkError) {
+      // 🚨 네트워크 에러 (연결 실패, 타임아웃 등)
+      console.error(`[authFetch] 🔴 Network error for ${url}:`, networkError);
+
+      // WebView에서 디버깅용 alert (개발 중에만 사용)
+      if (typeof window !== 'undefined' && window.ReactNativeWebView) {
+        console.error('[authFetch] WebView network error:', {
+          url,
+          method: options.method || 'GET',
+          error: networkError instanceof Error ? networkError.message : String(networkError),
+        });
+      }
+
+      throw networkError; // 상위로 전파
+    }
+
     lastResponse = response;
+
+    // 🔍 DEBUG: 응답 로그
+    console.log(`[authFetch] 📥 ${response.status} ${url}`);
 
     // 401 에러가 아니면 바로 반환
     if (response.status !== 401) {
