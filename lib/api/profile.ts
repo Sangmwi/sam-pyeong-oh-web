@@ -3,9 +3,12 @@
  *
  * Supabase와 통신하는 순수 API 함수들
  * React Query에 의존하지 않음 - 재사용성과 테스트 용이성 향상
+ *
+ * 모든 API 호출은 authFetch를 사용하여 401 에러 시 자동 세션 갱신
  */
 
 import { User, ProfileUpdateData } from '@/lib/types';
+import { authFetch } from '@/lib/utils/authFetch';
 
 /**
  * Profile 조회/수정 관련 API
@@ -18,10 +21,9 @@ export const profileApi = {
    * @throws Error 네트워크 오류 또는 서버 오류 발생 시
    */
   async getCurrentUserProfile(): Promise<User | null> {
-    const response = await fetch('/api/user/me', {
+    const response = await authFetch('/api/user/me', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include', // 웹뷰에서 쿠키 전달을 위해 필수
     });
 
     if (response.status === 404) return null;
@@ -42,10 +44,9 @@ export const profileApi = {
    * @returns User 또는 null (사용자 없음)
    */
   async getUserProfile(userId: string): Promise<User | null> {
-    const response = await fetch(`/api/user/${userId}`, {
+    const response = await authFetch(`/api/user/${userId}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
     });
 
     if (response.status === 404) return null;
@@ -66,10 +67,9 @@ export const profileApi = {
    * @returns 업데이트된 User 객체
    */
   async updateProfile(data: ProfileUpdateData): Promise<User> {
-    const response = await fetch('/api/user/profile', {
+    const response = await authFetch('/api/user/profile', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify(data),
     });
 
@@ -97,9 +97,8 @@ export const profileApi = {
     // type을 index로 변환: main = 0, additional = 현재 이미지 수
     formData.append('index', type === 'main' ? '0' : '1');
 
-    const response = await fetch('/api/user/profile/image', {
+    const response = await authFetch('/api/user/profile/image', {
       method: 'POST',
-      credentials: 'include',
       body: formData,
     });
 
@@ -118,10 +117,9 @@ export const profileApi = {
    * @returns 삭제 결과 (success, profileImages)
    */
   async deleteProfileImage(imageUrl: string): Promise<{ success: boolean; profileImages: string[] }> {
-    const response = await fetch('/api/user/profile/image', {
+    const response = await authFetch('/api/user/profile/image', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify({ imageUrl }),
     });
 
@@ -224,10 +222,9 @@ export const profileSearchApi = {
       queryParams.append('sortBy', filters.sortBy);
     }
 
-    const response = await fetch(`/api/user/search?${queryParams}`, {
+    const response = await authFetch(`/api/user/search?${queryParams}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -254,12 +251,11 @@ export const profileSearchApi = {
    * @returns 추천 프로필 목록
    */
   async getRecommendedProfiles(limit: number = 20): Promise<User[]> {
-    const response = await fetch(
+    const response = await authFetch(
       `/api/user/recommendations?limit=${limit}`,
       {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
       }
     );
 
@@ -281,12 +277,11 @@ export const profileSearchApi = {
    * @returns 같은 부대 사용자 목록
    */
   async getSameUnitUsers(unitId: string, limit: number = 20): Promise<User[]> {
-    const response = await fetch(
+    const response = await authFetch(
       `/api/user/same-unit?unitId=${unitId}&limit=${limit}`,
       {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
       }
     );
 

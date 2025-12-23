@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/utils/supabase/client';
 import { User, SignupCompleteData, ProfileUpdateData } from '@/lib/types';
 import { queryKeys } from '@/lib/constants/queryKeys';
+import { authFetch } from '@/lib/utils/authFetch';
 
 // API functions
 const api = {
@@ -16,9 +17,7 @@ const api = {
 
     if (!authUser) return null;
 
-    const response = await fetch('/api/user/me', {
-      credentials: 'include',
-    });
+    const response = await authFetch('/api/user/me');
     if (!response.ok) {
       if (response.status === 404) return null;
       throw new Error('Failed to fetch user');
@@ -28,9 +27,7 @@ const api = {
 
   // Check nickname availability
   async checkNickname(nickname: string): Promise<{ available: boolean }> {
-    const response = await fetch(`/api/user/check-nickname?nickname=${encodeURIComponent(nickname)}`, {
-      credentials: 'include',
-    });
+    const response = await authFetch(`/api/user/check-nickname?nickname=${encodeURIComponent(nickname)}`);
     if (!response.ok) throw new Error('Failed to check nickname');
     return response.json();
   },
@@ -39,10 +36,9 @@ const api = {
   async completeSignup(data: SignupCompleteData): Promise<User> {
     console.log('[useAuth] Calling /api/signup/complete with data:', { ...data, phoneNumber: '***' });
 
-    const response = await fetch('/api/signup/complete', {
+    const response = await authFetch('/api/signup/complete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify(data),
     });
 
@@ -84,10 +80,9 @@ const api = {
 
   // Update user profile
   async updateProfile(data: ProfileUpdateData): Promise<User> {
-    const response = await fetch('/api/user/profile', {
+    const response = await authFetch('/api/user/profile', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error('Failed to update profile');
