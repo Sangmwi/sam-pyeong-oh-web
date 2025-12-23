@@ -1,6 +1,6 @@
 'use client';
 
-import { useCurrentUser } from '@/lib/hooks/useAuth';
+import { useCurrentUserProfile } from '@/lib/hooks/useProfile';
 import GreetingSection from '@/components/home/GreetingSection';
 import HealthScoreCard from '@/components/home/HealthScoreCard';
 import SectionHeader from '@/components/home/SectionHeader';
@@ -142,7 +142,7 @@ const DUMMY_INFLUENCERS: Influencer[] = [
 ];
 
 export default function Home() {
-  const { data: user, isLoading, error, refetch } = useCurrentUser();
+  const { data: user, isLoading, error, refetch } = useCurrentUserProfile();
 
   const handleViewHealthDetails = () => {
     // TODO: 건강 점수 상세 페이지로 이동

@@ -221,8 +221,7 @@ export function useProfileEdit(): UseProfileEditReturn {
         },
         onError: (err: Error) => {
           console.error('Failed to update profile:', err);
-          // 디버깅용 상세 에러 표시
-          alert(`프로필 저장 실패\n\n[DEBUG]\n${err.message || err}`);
+          alert('프로필 저장에 실패했습니다. 다시 시도해 주세요.');
           setIsSaving(false);
         },
       });
