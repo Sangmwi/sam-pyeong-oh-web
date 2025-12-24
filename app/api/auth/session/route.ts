@@ -9,8 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
 // ============================================================================
 // POST /api/auth/session - 토큰으로 쿠키 세션 설정
@@ -28,33 +27,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const cookieStore = await cookies();
+    // Response 객체 생성 (쿠키 설정용)
+    let response = NextResponse.json({ success: true });
 
-    // Supabase 클라이언트 생성 (쿠키 설정 가능하도록)
+    // 설정할 쿠키 수집
+    const cookiesToSet: Array<{ name: string; value: string; options: CookieOptions }> = [];
+
+    // Supabase 클라이언트 생성
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           getAll() {
-            return cookieStore.getAll();
+            return request.cookies.getAll();
           },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, {
-                ...options,
-                // 보안 설정 강화
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-              });
+          setAll(cookies) {
+            cookies.forEach((cookie) => {
+              cookiesToSet.push(cookie);
             });
           },
         },
       }
     );
 
-    // 토큰으로 세션 설정 → Supabase가 자동으로 쿠키에 저장
+    // 토큰으로 세션 설정
     const { data, error } = await supabase.auth.setSession({
       access_token,
       refresh_token,
@@ -75,9 +72,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[API] Session set for:', data.user?.email);
-
-    return NextResponse.json({
+    // Response에 쿠키 설정
+    response = NextResponse.json({
       success: true,
       user: {
         id: data.user?.id,
@@ -85,6 +81,21 @@ export async function POST(request: NextRequest) {
       },
       expires_at: data.session.expires_at,
     });
+
+    // 수집된 쿠키를 Response에 적용
+    cookiesToSet.forEach(({ name, value, options }) => {
+      response.cookies.set(name, value, {
+        ...options,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+      });
+    });
+
+    console.log('[API] Session set for:', data.user?.email, 'cookies:', cookiesToSet.length);
+
+    return response;
   } catch (error) {
     console.error('[API] Session error:', error);
     return NextResponse.json(
@@ -98,9 +109,9 @@ export async function POST(request: NextRequest) {
 // DELETE /api/auth/session - 세션 삭제 (로그아웃)
 // ============================================================================
 
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
+    const cookiesToSet: Array<{ name: string; value: string; options: CookieOptions }> = [];
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -108,35 +119,38 @@ export async function DELETE() {
       {
         cookies: {
           getAll() {
-            return cookieStore.getAll();
+            return request.cookies.getAll();
           },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options);
+          setAll(cookies) {
+            cookies.forEach((cookie) => {
+              cookiesToSet.push(cookie);
             });
           },
         },
       }
     );
 
-    const { error } = await supabase.auth.signOut();
+    await supabase.auth.signOut();
 
-    if (error) {
-      console.error('[API] Logout failed:', error.message);
-      // 에러가 있어도 쿠키는 삭제 시도
-    }
+    // Response 생성
+    const response = NextResponse.json({ success: true });
 
-    // Supabase 관련 쿠키 명시적 삭제
-    const allCookies = cookieStore.getAll();
+    // Supabase가 설정한 쿠키 (빈 값으로 삭제) 적용
+    cookiesToSet.forEach(({ name, value, options }) => {
+      response.cookies.set(name, value, options);
+    });
+
+    // 추가로 Supabase 관련 쿠키 명시적 삭제
+    const allCookies = request.cookies.getAll();
     for (const cookie of allCookies) {
       if (cookie.name.includes('supabase') || cookie.name.includes('sb-')) {
-        cookieStore.delete(cookie.name);
+        response.cookies.delete(cookie.name);
       }
     }
 
     console.log('[API] Session cleared');
 
-    return NextResponse.json({ success: true });
+    return response;
   } catch (error) {
     console.error('[API] Logout error:', error);
     return NextResponse.json(

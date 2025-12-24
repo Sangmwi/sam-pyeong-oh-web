@@ -2,9 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useState } from 'react';
 import { useCurrentUserProfile } from '@/lib/hooks/useProfile';
-import { createClient } from '@/utils/supabase/client';
+import { useLogout } from '@/hooks/use-logout';
 import ProfileHeroSection from '@/components/profile/ProfileHeroSection';
 import ProfileLocationCard from '@/components/profile/ProfileLocationCard';
 import ProfileBioSection from '@/components/profile/ProfileBioSection';
@@ -18,22 +17,10 @@ import { Loader2, ArrowLeft, Settings, LogOut } from 'lucide-react';
 export default function ProfilePage() {
   const router = useRouter();
   const { data: user, isLoading, error } = useCurrentUserProfile();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const supabase = createClient();
+  const { logout, isLoggingOut } = useLogout();
 
   const handleBack = () => {
     router.back();
-  };
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await supabase.auth.signOut();
-      router.push('/login');
-    } catch (error) {
-      console.error('Logout failed:', error);
-      setIsLoggingOut(false);
-    }
   };
 
   if (isLoading) {
@@ -125,7 +112,7 @@ export default function ProfilePage() {
         {/* Logout Button */}
         <div className="pt-8">
           <button
-            onClick={handleLogout}
+            onClick={logout}
             disabled={isLoggingOut}
             className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >

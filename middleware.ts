@@ -1,10 +1,45 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// ============================================================================
+// Route Configuration
+// ============================================================================
+
+/** 인증 불필요 경로 (exact match) */
+const PUBLIC_ROUTES = new Set(['/login'])
+
+/** 인증 불필요 경로 (prefix match) */
+const PUBLIC_PREFIXES = ['/auth/']
+
+/** 회원가입 경로 (인증 필요, DB 유저 불필요) */
+const SIGNUP_PREFIX = '/signup'
+
+/** 인증 관련 경로 (DB 체크 필요) */
+const AUTH_CHECK_ROUTES = new Set(['/login', '/signup'])
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+const isPublicRoute = (pathname: string): boolean =>
+  PUBLIC_ROUTES.has(pathname) || PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+
+const isSignupRoute = (pathname: string): boolean =>
+  pathname.startsWith(SIGNUP_PREFIX)
+
+/** 리다이렉트 헬퍼 */
+const redirectTo = (request: NextRequest, path: string) => {
+  const url = request.nextUrl.clone()
+  url.pathname = path
+  return NextResponse.redirect(url)
+}
+
+// ============================================================================
+// Middleware
+// ============================================================================
+
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
+  let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,10 +50,8 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
-          })
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
@@ -32,58 +65,35 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname
+  const isPublic = isPublicRoute(pathname)
+  const isSignup = isSignupRoute(pathname)
 
-  // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/auth/callback']
-  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
-
-  // Signup route (requires auth session but not User record)
-  const isSignupRoute = pathname.startsWith('/signup')
-
-  // If user is not authenticated and trying to access protected route
-  if (!user && !isPublicRoute) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+  // 미인증 사용자 → 보호된 경로 접근 시 로그인으로
+  if (!user && !isPublic) {
+    return redirectTo(request, '/login')
   }
 
-  // Only check DB user status when necessary (login/signup pages or first access)
-  // This reduces DB queries on every route navigation
+  // 인증된 사용자 → DB 유저 존재 여부 확인
   if (user) {
-    const needsDbCheck =
-      pathname === '/login' ||
-      pathname === '/signup' ||
-      (!isPublicRoute && !isSignupRoute);
+    const needsDbCheck = AUTH_CHECK_ROUTES.has(pathname) || (!isPublic && !isSignup)
 
     if (needsDbCheck) {
-      // Single DB query for all scenarios
       const { data: dbUser, error } = await supabase
         .from('users')
         .select('id')
         .eq('provider_id', user.id)
         .maybeSingle()
 
-      const userExistsInDb = !!dbUser && !error;
+      const userExistsInDb = !!dbUser && !error
 
-      // Scenario 1: User exists, trying to access login/signup -> redirect home
-      if (userExistsInDb && (pathname === '/login' || pathname === '/signup')) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/'
-        return NextResponse.redirect(url)
+      // 기존 유저 → 로그인/회원가입 페이지 접근 시 홈으로
+      if (userExistsInDb && AUTH_CHECK_ROUTES.has(pathname)) {
+        return redirectTo(request, '/')
       }
 
-      // Scenario 2: User doesn't exist, trying to access protected route -> redirect signup
-      if (!userExistsInDb && !isPublicRoute && !isSignupRoute) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/signup'
-        return NextResponse.redirect(url)
-      }
-
-      // Scenario 3: User doesn't exist, on login page -> redirect signup
-      if (!userExistsInDb && pathname === '/login') {
-        const url = request.nextUrl.clone()
-        url.pathname = '/signup'
-        return NextResponse.redirect(url)
+      // 신규 유저 (DB에 없음) → 회원가입으로
+      if (!userExistsInDb && !isSignup) {
+        return redirectTo(request, '/signup')
       }
     }
   }
