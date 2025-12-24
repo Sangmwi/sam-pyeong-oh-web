@@ -27,7 +27,8 @@ export type WebToAppMessage =
         canGoBack: boolean;
       };
     }
-  | { type: "LOGOUT" };
+  | { type: "LOGOUT" }
+  | { type: "REQUEST_LOGIN" };
 
 // ============================================================================
 // Global Type Declarations
@@ -107,6 +108,16 @@ export const useWebViewBridge = () => {
     window.ReactNativeWebView.postMessage(JSON.stringify({ type: "LOGOUT" }));
   }, []);
 
-  return { sendRouteInfo, sendLogout };
+  // 웹 → 앱: 로그인 요청 (네이티브 OAuth 트리거)
+  const requestLogin = useCallback(() => {
+    if (!window.ReactNativeWebView) return false;
+    window.ReactNativeWebView.postMessage(JSON.stringify({ type: "REQUEST_LOGIN" }));
+    return true;
+  }, []);
+
+  // WebView 환경 여부 확인
+  const isInWebView = typeof window !== "undefined" && !!window.ReactNativeWebView;
+
+  return { sendRouteInfo, sendLogout, requestLogin, isInWebView };
 };
 

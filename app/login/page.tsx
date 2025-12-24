@@ -7,12 +7,14 @@ import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import GoogleLogo from "@/assets/logos/google.svg";
 import logoImage from "@/assets/images/splash-image-md.png";
+import { useWebViewBridge } from "@/hooks/use-webview-bridge";
 
 function LoginContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const supabase = createClient();
+  const { requestLogin, isInWebView } = useWebViewBridge();
 
   useEffect(() => {
     const errorParam = searchParams.get("error");
@@ -24,9 +26,20 @@ function LoginContent() {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError(null);
+
+    // WebView 환경에서는 앱에 로그인 요청 전송 (네이티브 OAuth)
+    if (isInWebView) {
+      const sent = requestLogin();
+      if (sent) {
+        console.log("[Login] Requested native OAuth from app");
+        // 앱에서 OAuth 처리 후 토큰 전달받음
+        // 로딩 상태 유지 (앱에서 처리 완료 후 페이지 이동됨)
+        return;
+      }
+    }
+
+    // 웹 브라우저 환경에서는 기존 쿠키 기반 OAuth
     try {
-      // Use production URL for OAuth callback
-      // In development, use localhost. In production/app, use the deployed URL
       const isLocalhost = window.location.hostname === 'localhost' ||
                           window.location.hostname === '127.0.0.1' ||
                           window.location.hostname === '10.0.2.2';
