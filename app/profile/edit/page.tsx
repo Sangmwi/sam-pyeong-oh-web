@@ -1,8 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useProfileProgress } from '@/lib/hooks/useProfile';
-import { useProfileEdit } from '@/lib/hooks/useProfileEdit';
+import { useProfileProgress, useProfileEdit } from '@/hooks';
 import { Loader2 } from 'lucide-react';
 import PageHeader from '@/components/common/PageHeader';
 import ProfilePhotoGallery from '@/components/profile/edit/ProfilePhotoGallery';

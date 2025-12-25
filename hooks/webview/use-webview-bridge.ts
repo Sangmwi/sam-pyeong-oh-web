@@ -14,10 +14,10 @@
 import { useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { isTabRoute } from "@/lib/routes";
-import type { AppToWebCommand, WebToAppMessage } from "@/lib/webview";
+import type { AppToWebMessage, WebToAppMessage } from "@/lib/webview";
 
 // Re-export types for convenience
-export type { AppToWebCommand, WebToAppMessage } from "@/lib/webview";
+export type { AppToWebMessage, WebToAppMessage } from "@/lib/webview";
 
 // ============================================================================
 // Constants
@@ -126,7 +126,7 @@ export const useWebViewBridge = () => {
   // ──────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    const handleAppCommand = async (event: CustomEvent<AppToWebCommand>) => {
+    const handleAppCommand = async (event: CustomEvent<AppToWebMessage>) => {
       const command = event.detail;
 
       switch (command.type) {

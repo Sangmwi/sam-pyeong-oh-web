@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useProfileImagesDraft, DraftImage, AddImageAsyncResult } from '@/lib/hooks';
-import { useGridDragDrop } from '@/lib/hooks/useGridDragDrop';
+import { useProfileImagesDraft, useGridDragDrop } from '@/hooks';
+import type { DraftImage, AddImageAsyncResult } from '@/hooks/profile/useProfileImagesDraft';
 import { startFileRead, arrayBufferToDataUrl, validateImageFile } from '@/lib/utils/imageValidation';
 import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import FormSection from '@/components/ui/FormSection';

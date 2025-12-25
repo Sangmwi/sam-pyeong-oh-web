@@ -1,3 +1,10 @@
+/**
+ * WebView Bridge Types
+ *
+ * ⚠️ SOURCE OF TRUTH
+ * 이 파일 수정 시 앱의 lib/webview/types.ts에도 동일하게 반영하세요.
+ */
+
 // ============================================================================
 // Route Information
 // ============================================================================
@@ -14,7 +21,7 @@ export type RouteInfo = {
 // ============================================================================
 
 /** 앱 → 웹 메시지 (CustomEvent로 수신) */
-export type AppToWebCommand =
+export type AppToWebMessage =
   | { type: 'NAVIGATE_HOME' }
   | { type: 'NAVIGATE_TO'; path: string }
   | { type: 'GET_ROUTE_INFO' }
@@ -31,19 +38,3 @@ export type WebToAppMessage =
   | { type: 'SESSION_SET'; success: boolean }
   | { type: 'REQUEST_SESSION_REFRESH' }
   | { type: 'SESSION_EXPIRED' };
-
-// ============================================================================
-// Global Type Declarations
-// ============================================================================
-
-declare global {
-  interface Window {
-    ReactNativeWebView?: {
-      postMessage: (message: string) => void;
-    };
-  }
-
-  interface WindowEventMap {
-    'app-command': CustomEvent<AppToWebCommand>;
-  }
-}

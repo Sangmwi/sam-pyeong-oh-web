@@ -1,6 +1,6 @@
 'use client';
 
-import { useCurrentUserProfile } from '@/lib/hooks/useProfile';
+import { useCurrentUserProfile } from '@/hooks';
 import MainTabLayout from '@/components/common/MainTabLayout';
 import GreetingSection from '@/components/home/GreetingSection';
 import HealthScoreCard from '@/components/home/HealthScoreCard';

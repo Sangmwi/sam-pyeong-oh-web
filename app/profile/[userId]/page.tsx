@@ -3,7 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
-import { useUserProfile } from '@/lib/hooks/useProfile';
+import { useUserProfile } from '@/hooks';
 import PageHeader from '@/components/common/PageHeader';
 import ProfileHeroSection from '@/components/profile/ProfileHeroSection';
 import ProfileLocationCard from '@/components/profile/ProfileLocationCard';

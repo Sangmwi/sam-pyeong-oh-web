@@ -5,7 +5,7 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import UnitSearch from '@/components/signup/UnitSearch';
-import { useCheckNickname } from '@/lib/hooks/useAuth';
+import { useCheckNickname } from '@/hooks';
 import {
   RANK_OPTIONS,
   SPECIALTY_OPTIONS,

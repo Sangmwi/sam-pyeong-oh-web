@@ -2,8 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useCurrentUserProfile } from '@/lib/hooks/useProfile';
-import { useLogout } from '@/hooks/use-logout';
+import { useCurrentUserProfile, useLogout } from '@/hooks';
 import PageHeader from '@/components/common/PageHeader';
 import ProfileHeroSection from '@/components/profile/ProfileHeroSection';
 import ProfileLocationCard from '@/components/profile/ProfileLocationCard';

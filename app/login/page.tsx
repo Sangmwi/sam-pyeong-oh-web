@@ -7,7 +7,7 @@ import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import GoogleLogo from "@/assets/logos/google.svg";
 import logoImage from "@/assets/images/splash-image-md.png";
-import { useWebViewBridge } from "@/hooks/use-webview-bridge";
+import { useWebViewBridge } from "@/hooks";
 
 function LoginContent() {
   const [isLoading, setIsLoading] = useState(false);

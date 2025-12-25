@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { useDragScroll, useScrollProgress } from '@/lib/hooks';
+import { useDragScroll, useScrollProgress } from '@/hooks';
 
 // ============================================================
 // Types

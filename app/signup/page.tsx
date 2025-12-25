@@ -7,7 +7,7 @@ import StepIndicator from '@/components/ui/StepIndicator';
 import PassVerificationStep from '@/components/signup/PassVerificationStep';
 import MilitaryInfoStep from '@/components/signup/MilitaryInfoStep';
 import ConfirmationStep from '@/components/signup/ConfirmationStep';
-import { useCompleteSignup } from '@/lib/hooks/useAuth';
+import { useCompleteSignup } from '@/hooks';
 import { PassVerificationData, MilitaryInfoData, SignupCompleteData } from '@/lib/types';
 
 const STEPS = ['본인인증', '군인정보', '확인'];
