@@ -11,7 +11,7 @@
  * 3. SESSION_SET 응답으로 완료 알림
  */
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { isTabRoute } from "@/lib/routes";
 import type { AppToWebCommand, WebToAppMessage } from "@/lib/webview";
@@ -41,13 +41,13 @@ export const useWebViewBridge = () => {
   // 웹 → 앱 메시지 전송 헬퍼
   // ──────────────────────────────────────────────────────────────────────────
 
-  const sendMessage = useCallback((message: WebToAppMessage) => {
+  const sendMessage = (message: WebToAppMessage) => {
     if (!window.ReactNativeWebView) return false;
     window.ReactNativeWebView.postMessage(JSON.stringify(message));
     return true;
-  }, []);
+  };
 
-  const sendRouteInfo = useCallback(() => {
+  const sendRouteInfo = () => {
     sendMessage({
       type: "ROUTE_INFO",
       payload: {
@@ -57,22 +57,21 @@ export const useWebViewBridge = () => {
         canGoBack: !isTabRoute(pathname),
       },
     });
-  }, [pathname, sendMessage]);
+  };
 
-  const sendLogout = useCallback(() => {
+  const sendLogout = () => {
     sendMessage({ type: "LOGOUT" });
-  }, [sendMessage]);
+  };
 
-  const requestLogin = useCallback(() => {
+  const requestLogin = () => {
     return sendMessage({ type: "REQUEST_LOGIN" });
-  }, [sendMessage]);
+  };
 
-  const sendWebReady = useCallback(() => {
+  const sendWebReady = () => {
     if (isReadyRef.current) return;
     isReadyRef.current = true;
     sendMessage({ type: "WEB_READY" });
-    console.log(`${LOG_PREFIX} Web ready signal sent`);
-  }, [sendMessage]);
+  };
 
   // ──────────────────────────────────────────────────────────────────────────
   // 세션 관리 함수
@@ -81,56 +80,46 @@ export const useWebViewBridge = () => {
   /**
    * 앱에서 받은 토큰으로 쿠키 세션을 설정합니다.
    */
-  const setSession = useCallback(
-    async (accessToken: string, refreshToken: string): Promise<boolean> => {
-      console.log(`${LOG_PREFIX} Setting session via API...`);
+  const setSession = async (accessToken: string, refreshToken: string): Promise<boolean> => {
+    try {
+      const response = await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        }),
+        credentials: "include",
+      });
 
-      try {
-        const response = await fetch("/api/auth/session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          }),
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          const error = await response.json().catch(() => ({}));
-          console.error(`${LOG_PREFIX} Session set failed:`, error);
-          return false;
-        }
-
-        console.log(`${LOG_PREFIX} Session set successfully`);
-        return true;
-      } catch (e) {
-        console.error(`${LOG_PREFIX} Session set error:`, e);
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        console.error(`${LOG_PREFIX} Session set failed:`, error);
         return false;
       }
-    },
-    []
-  );
+
+      return true;
+    } catch (e) {
+      console.error(`${LOG_PREFIX} Session set error:`, e);
+      return false;
+    }
+  };
 
   /**
    * 세션을 삭제합니다.
    */
-  const clearSession = useCallback(async (): Promise<boolean> => {
-    console.log(`${LOG_PREFIX} Clearing session...`);
-
+  const clearSession = async (): Promise<boolean> => {
     try {
       await fetch("/api/auth/session", {
         method: "DELETE",
         credentials: "include",
       });
-
-      console.log(`${LOG_PREFIX} Session cleared`);
       return true;
     } catch (e) {
       console.error(`${LOG_PREFIX} Session clear error:`, e);
       return false;
     }
-  }, []);
+  };
 
   // ──────────────────────────────────────────────────────────────────────────
   // 앱 → 웹 메시지 수신 핸들러
@@ -139,7 +128,6 @@ export const useWebViewBridge = () => {
   useEffect(() => {
     const handleAppCommand = async (event: CustomEvent<AppToWebCommand>) => {
       const command = event.detail;
-      console.log(`${LOG_PREFIX} Received:`, command.type);
 
       switch (command.type) {
         case "NAVIGATE_HOME":
@@ -158,9 +146,7 @@ export const useWebViewBridge = () => {
           const success = await setSession(command.access_token, command.refresh_token);
           sendMessage({ type: "SESSION_SET", success });
 
-          // 세션 설정 성공 시 홈으로 리다이렉트
           if (success && pathname === "/login") {
-            console.log(`${LOG_PREFIX} Session set on login page, redirecting to home`);
             router.replace("/");
           }
           break;
@@ -168,6 +154,7 @@ export const useWebViewBridge = () => {
 
         case "CLEAR_SESSION":
           await clearSession();
+          router.replace("/login");
           break;
 
         case "LOGIN_ERROR":
@@ -178,7 +165,7 @@ export const useWebViewBridge = () => {
 
     window.addEventListener("app-command", handleAppCommand);
     return () => window.removeEventListener("app-command", handleAppCommand);
-  }, [router, pathname, sendRouteInfo, sendMessage, setSession, clearSession]);
+  });
 
   // ──────────────────────────────────────────────────────────────────────────
   // 초기화 및 경로 변경 처리
@@ -190,14 +177,14 @@ export const useWebViewBridge = () => {
       const timer = setTimeout(() => sendWebReady(), 100);
       return () => clearTimeout(timer);
     }
-  }, [isInWebView, sendWebReady]);
+  });
 
   // 경로 변경 시 앱에 알림
   useEffect(() => {
     if (isInWebView) {
       sendRouteInfo();
     }
-  }, [pathname, isInWebView, sendRouteInfo]);
+  }, [pathname]);
 
   return {
     isInWebView,

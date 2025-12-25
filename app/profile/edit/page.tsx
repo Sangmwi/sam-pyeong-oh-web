@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useProfileProgress } from '@/lib/hooks/useProfile';
 import { useProfileEdit } from '@/lib/hooks/useProfileEdit';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import PageHeader from '@/components/common/PageHeader';
 import ProfilePhotoGallery from '@/components/profile/edit/ProfilePhotoGallery';
 import ProfileNicknameInput from '@/components/profile/edit/ProfileNicknameInput';
 import ProfileBioInput from '@/components/profile/edit/ProfileBioInput';
@@ -29,7 +30,7 @@ function ErrorState() {
   const router = useRouter();
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-6 bg-background">
+    <div className="flex min-h-screen items-center justify-center p-4 bg-background">
       <div className="text-center">
         <p className="mb-4 text-sm text-muted-foreground">
           프로필을 불러올 수 없습니다
@@ -45,37 +46,13 @@ function ErrorState() {
   );
 }
 
-interface HeaderProps {
-  onBack: () => void;
-}
-
-function Header({ onBack }: HeaderProps) {
-  return (
-    <header className="sticky top-0 z-40 bg-background border-b border-border/50">
-      <div className="flex items-center justify-between px-5 py-4">
-        <button
-          onClick={onBack}
-          className="p-1 hover:bg-muted/50 rounded-lg transition-colors"
-          aria-label="뒤로 가기"
-        >
-          <ArrowLeft className="w-6 h-6 text-card-foreground" />
-        </button>
-        <h1 className="text-base font-bold text-card-foreground">
-          프로필 만들기
-        </h1>
-        <div className="w-9" />
-      </div>
-    </header>
-  );
-}
-
 interface ProgressBarProps {
   progress: number;
 }
 
 function ProgressBar({ progress }: ProgressBarProps) {
   return (
-    <div className="px-5 py-4">
+    <div className="px-4 py-4">
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground">
@@ -101,7 +78,7 @@ interface SaveButtonProps {
 
 function SaveButton({ onClick, disabled, isSaving }: SaveButtonProps) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 p-5 bg-background border-t border-border/50">
+    <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border/50">
       <button
         onClick={onClick}
         disabled={disabled}
@@ -145,11 +122,11 @@ export default function ProfileEditPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header onBack={handleBack} />
+      <PageHeader title="프로필 만들기" centered onBack={handleBack} />
       <ProgressBar progress={progress} />
 
       {/* Content */}
-      <div className="px-5 pb-32 space-y-8">
+      <div className="px-4 pb-32 space-y-8">
         <ProfilePhotoGallery
           initialImages={user.profileImages || []}
           isSaving={isSaving}

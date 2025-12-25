@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useProfileImagesDraft, DraftImage, AddImageAsyncResult } from '@/lib/hooks';
 import { useGridDragDrop } from '@/lib/hooks/useGridDragDrop';
 import { startFileRead, arrayBufferToDataUrl, validateImageFile } from '@/lib/utils/imageValidation';
@@ -237,54 +237,48 @@ export default function ProfilePhotoGallery({
 
   // ========== Handlers ==========
 
-  const handleAddClick = useCallback((index: number) => {
+  const handleAddClick = (index: number) => {
     uploadIndexRef.current = index;
     fileInputRef.current?.click();
-  }, []);
+  };
 
-  const handleInputChange = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
+  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-      const inputElement = e.target;
-      const targetIndex = uploadIndexRef.current;
+    const inputElement = e.target;
+    const targetIndex = uploadIndexRef.current;
 
-      // 안드로이드 WebView content:// URI 권한 만료 문제 해결
-      // 이벤트 핸들러 내에서 즉시 파일 검증 + 읽기 시작
-      const validation = validateImageFile(file);
-      if (!validation.valid) {
-        inputElement.value = '';
-        setErrorMessage(validation.error || '파일 검증에 실패했습니다.');
-        return;
+    // 안드로이드 WebView content:// URI 권한 만료 문제 해결
+    // 이벤트 핸들러 내에서 즉시 파일 검증 + 읽기 시작
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      inputElement.value = '';
+      setErrorMessage(validation.error || '파일 검증에 실패했습니다.');
+      return;
+    }
+
+    // 파일 읽기 즉시 시작 (비동기지만 읽기 "시작"은 동기적)
+    const { promise: readPromise } = startFileRead(file);
+
+    try {
+      const arrayBuffer = await readPromise;
+      const dataUrl = await arrayBufferToDataUrl(arrayBuffer, file.type || 'image/jpeg');
+      const result: AddImageAsyncResult = await addImage(file, targetIndex, dataUrl);
+
+      if (!result.success && result.error) {
+        setErrorMessage(result.error);
       }
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : '파일 처리에 실패했습니다.');
+    } finally {
+      inputElement.value = '';
+    }
+  };
 
-      // 파일 읽기 즉시 시작 (비동기지만 읽기 "시작"은 동기적)
-      const { promise: readPromise } = startFileRead(file);
-
-      try {
-        const arrayBuffer = await readPromise;
-        const dataUrl = await arrayBufferToDataUrl(arrayBuffer, file.type || 'image/jpeg');
-        const result: AddImageAsyncResult = await addImage(file, targetIndex, dataUrl);
-
-        if (!result.success && result.error) {
-          setErrorMessage(result.error);
-        }
-      } catch (err) {
-        setErrorMessage(err instanceof Error ? err.message : '파일 처리에 실패했습니다.');
-      } finally {
-        inputElement.value = '';
-      }
-    },
-    [addImage]
-  );
-
-  const handleDelete = useCallback(
-    (index: number) => {
-      removeImage(index);
-    },
-    [removeImage]
-  );
+  const handleDelete = (index: number) => {
+    removeImage(index);
+  };
 
   // ========== Render ==========
 

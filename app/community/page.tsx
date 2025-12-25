@@ -1,5 +1,6 @@
 'use client';
 
+import MainTabLayout from '@/components/common/MainTabLayout';
 import CommunityHeader from '@/components/community/CommunityHeader';
 import CategoryTabs from '@/components/community/CategoryTabs';
 import PostCard from '@/components/community/PostCard';
@@ -70,26 +71,24 @@ export default function CommunityPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="mx-auto max-w-2xl space-y-6">
-        <CommunityHeader onNewPost={handleNewPost} onFilter={handleFilter} />
-        <CategoryTabs onCategoryChange={handleCategoryChange} />
+    <MainTabLayout>
+      <CommunityHeader onNewPost={handleNewPost} onFilter={handleFilter} />
+      <CategoryTabs onCategoryChange={handleCategoryChange} />
 
-        <div className="space-y-4">
-          {DUMMY_POSTS.map((post) => (
-            <PostCard
-              key={post.id}
-              author={post.author}
-              timeAgo={post.timeAgo}
-              content={post.content}
-              likes={post.likes}
-              comments={post.comments}
-              onClick={() => handlePostClick(post.id)}
-            />
-          ))}
-        </div>
+      <div className="space-y-4">
+        {DUMMY_POSTS.map((post) => (
+          <PostCard
+            key={post.id}
+            author={post.author}
+            timeAgo={post.timeAgo}
+            content={post.content}
+            likes={post.likes}
+            comments={post.comments}
+            onClick={() => handlePostClick(post.id)}
+          />
+        ))}
       </div>
-    </div>
+    </MainTabLayout>
   );
 }
 

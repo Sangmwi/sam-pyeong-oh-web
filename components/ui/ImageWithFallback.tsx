@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image, { ImageProps } from 'next/image';
 import { ImageOff } from 'lucide-react';
 
@@ -49,14 +49,14 @@ export default function ImageWithFallback({
     }
   }, [src]);
 
-  const handleLoad = useCallback(() => {
+  const handleLoad = () => {
     setLoading(false);
-  }, []);
+  };
 
-  const handleError = useCallback(() => {
+  const handleError = () => {
     setError(true);
     setLoading(false);
-  }, []);
+  };
 
   // URL 타입 감지
   const isLocalUrl = src?.startsWith('blob:') || src?.startsWith('data:');

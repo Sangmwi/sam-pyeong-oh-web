@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCurrentUserProfile, useUpdateProfile } from './useProfile';
 import { useProfileImagesDraft } from './useProfileImagesDraft';
@@ -140,27 +140,24 @@ export function useProfileEdit(): UseProfileEditReturn {
   /**
    * 폼 필드 업데이트
    */
-  const updateFormField = useCallback(
-    <K extends keyof ProfileFormData>(field: K, value: ProfileFormData[K]) => {
-      setFormData((prev) => ({ ...prev, [field]: value }));
-    },
-    []
-  );
+  const updateFormField = <K extends keyof ProfileFormData>(
+    field: K,
+    value: ProfileFormData[K]
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   /**
    * 이미지 드래프트 변경 핸들러
    */
-  const handleDraftChange = useCallback(
-    (draft: ReturnType<typeof useProfileImagesDraft>) => {
-      imageDraftRef.current = draft;
-    },
-    []
-  );
+  const handleDraftChange = (draft: ReturnType<typeof useProfileImagesDraft>) => {
+    imageDraftRef.current = draft;
+  };
 
   /**
    * 뒤로가기
    */
-  const handleBack = useCallback(() => {
+  const handleBack = () => {
     const hasImageChanges = imageDraftRef.current?.hasChanges;
     if (hasImageChanges) {
       if (confirm('저장하지 않은 변경사항이 있습니다. 정말 나가시겠습니까?')) {
@@ -169,12 +166,12 @@ export function useProfileEdit(): UseProfileEditReturn {
     } else {
       router.back();
     }
-  }, [router]);
+  };
 
   /**
    * 저장하기
    */
-  const handleSave = useCallback(async () => {
+  const handleSave = async () => {
     if (!user) return;
 
     setIsSaving(true);
@@ -231,7 +228,7 @@ export function useProfileEdit(): UseProfileEditReturn {
       alert(err instanceof Error ? err.message : '저장에 실패했습니다.');
       setIsSaving(false);
     }
-  }, [user, formData, uploadImages, updateProfile, router]);
+  };
 
   // ========== Return ==========
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { User } from '@/lib/types';
 import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import { CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -26,24 +26,24 @@ export default function ProfileHeroSection({ user }: ProfileHeroSectionProps) {
     return age;
   };
 
-  const goToNext = useCallback(() => {
+  const goToNext = () => {
     if (images.length > 1) {
       setCurrentIndex((prev) => (prev + 1) % images.length);
     }
-  }, [images.length]);
+  };
 
-  const goToPrev = useCallback(() => {
+  const goToPrev = () => {
     if (images.length > 1) {
       setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
     }
-  }, [images.length]);
+  };
 
   // Touch handlers for swipe
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+  const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.touches[0].clientX);
-  }, []);
+  };
 
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+  const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStart === null) return;
 
     const touchEnd = e.changedTouches[0].clientX;
@@ -59,7 +59,7 @@ export default function ProfileHeroSection({ user }: ProfileHeroSectionProps) {
     }
 
     setTouchStart(null);
-  }, [touchStart, goToNext, goToPrev]);
+  };
 
   // Keyboard navigation
   useEffect(() => {

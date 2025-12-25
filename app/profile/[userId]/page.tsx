@@ -4,6 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
 import { useUserProfile } from '@/lib/hooks/useProfile';
+import PageHeader from '@/components/common/PageHeader';
 import ProfileHeroSection from '@/components/profile/ProfileHeroSection';
 import ProfileLocationCard from '@/components/profile/ProfileLocationCard';
 import ProfileBioSection from '@/components/profile/ProfileBioSection';
@@ -13,7 +14,7 @@ import ProfileInbodySection from '@/components/profile/ProfileInbodySection';
 import ProfileMilitarySection from '@/components/profile/ProfileMilitarySection';
 import ProfileLocationsSection from '@/components/profile/ProfileLocationsSection';
 import FloatingChatButton from '@/components/profile/FloatingChatButton';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 export default function UserProfilePage() {
   const router = useRouter();
@@ -22,10 +23,6 @@ export default function UserProfilePage() {
 
   // React Query로 데이터 페칭
   const { data: user, isLoading, error } = useUserProfile(userId);
-
-  const handleBack = () => {
-    router.back();
-  };
 
   const handleChat = () => {
     // TODO: Navigate to chat with this user
@@ -42,11 +39,11 @@ export default function UserProfilePage() {
 
   if (error || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-6 bg-background">
+      <div className="flex min-h-screen items-center justify-center p-4 bg-background">
         <div className="text-center">
           <p className="mb-4 text-sm text-muted-foreground">프로필을 불러올 수 없습니다</p>
           <button
-            onClick={handleBack}
+            onClick={() => router.back()}
             className="rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground"
           >
             돌아가기
@@ -58,24 +55,10 @@ export default function UserProfilePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-background border-b border-border/50">
-        <div className="flex items-center justify-between px-5 py-4">
-          <button
-            onClick={handleBack}
-            className="p-1 hover:bg-muted/50 rounded-lg transition-colors"
-            aria-label="뒤로 가기"
-          >
-            <ArrowLeft className="w-6 h-6 text-card-foreground" />
-          </button>
-          <h1 className="text-base font-bold text-card-foreground">프로필</h1>
-          {/* Empty div for layout balance */}
-          <div className="w-9" />
-        </div>
-      </div>
+      <PageHeader title="프로필" centered />
 
       {/* Content */}
-      <div className="px-5 py-8 space-y-6 pb-32">
+      <div className="p-4 space-y-6 pb-32">
         {/* Hero Section */}
         <ProfileHeroSection user={user} />
 

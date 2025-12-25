@@ -9,8 +9,7 @@
  * - Web: Supabase signOut → 로그인 페이지 리다이렉트
  */
 
-import { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useWebViewBridge } from "./use-webview-bridge";
 
@@ -30,31 +29,31 @@ interface UseLogoutResult {
 // ============================================================================
 
 export function useLogout(): UseLogoutResult {
-  const router = useRouter();
   const supabase = createClient();
   const { isInWebView, sendLogout } = useWebViewBridge();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const logout = useCallback(async () => {
+  const logout = async () => {
     setIsLoggingOut(true);
 
     try {
       if (isInWebView) {
-        // WebView 환경: 앱에 로그아웃 메시지 전송
-        // 앱이 세션 정리 및 로그인 페이지 리다이렉트 처리
         sendLogout();
-        // WebView에서는 앱이 처리하므로 여기서 상태 리셋하지 않음
         return;
       }
 
-      // 일반 웹 환경: 직접 로그아웃 처리
-      await supabase.auth.signOut();
-      router.push("/login");
+      const { error } = await supabase.auth.signOut({ scope: "local" });
+
+      if (error) {
+        console.error("[useLogout] SignOut error:", error);
+      }
+
+      window.location.replace("/login");
     } catch (error) {
       console.error("[useLogout] Logout failed:", error);
-      setIsLoggingOut(false);
+      window.location.replace("/login");
     }
-  }, [isInWebView, sendLogout, supabase.auth, router]);
+  };
 
   return {
     logout,

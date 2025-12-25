@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useCallback, useEffect, RefObject } from 'react';
+import { useRef, useState, useEffect, RefObject } from 'react';
 
 interface UseDragScrollOptions {
   /** 드래그 활성화 여부 */
@@ -60,7 +60,7 @@ export function useDragScroll<T extends HTMLElement = HTMLDivElement>({
   const dragStateRef = useRef({ startX: 0, scrollLeft: 0 });
 
   // 마우스 드래그 시작
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  const handleMouseDown = (e: React.MouseEvent) => {
     if (!enabled || !containerRef.current) return;
 
     setIsDragging(true);
@@ -70,10 +70,10 @@ export function useDragScroll<T extends HTMLElement = HTMLDivElement>({
       scrollLeft: containerRef.current.scrollLeft,
     };
     e.preventDefault();
-  }, [enabled]);
+  };
 
   // 마우스 드래그 중
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+  const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging || !containerRef.current) return;
 
     e.preventDefault();
@@ -85,15 +85,15 @@ export function useDragScroll<T extends HTMLElement = HTMLDivElement>({
     }
 
     containerRef.current.scrollLeft = dragStateRef.current.scrollLeft - walk;
-  }, [isDragging, scrollSpeed, dragThreshold]);
+  };
 
   // 마우스 드래그 종료
-  const handleMouseUpOrLeave = useCallback(() => {
+  const handleMouseUpOrLeave = () => {
     setIsDragging(false);
-  }, []);
+  };
 
   // 터치 드래그 시작
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+  const handleTouchStart = (e: React.TouchEvent) => {
     if (!enabled || !containerRef.current) return;
 
     setIsDragging(true);
@@ -102,10 +102,10 @@ export function useDragScroll<T extends HTMLElement = HTMLDivElement>({
       startX: e.touches[0].pageX - containerRef.current.offsetLeft,
       scrollLeft: containerRef.current.scrollLeft,
     };
-  }, [enabled]);
+  };
 
   // 터치 드래그 중
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+  const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging || !containerRef.current) return;
 
     const x = e.touches[0].pageX - containerRef.current.offsetLeft;
@@ -116,12 +116,12 @@ export function useDragScroll<T extends HTMLElement = HTMLDivElement>({
     }
 
     containerRef.current.scrollLeft = dragStateRef.current.scrollLeft - walk;
-  }, [isDragging, scrollSpeed, dragThreshold]);
+  };
 
   // 터치 드래그 종료
-  const handleTouchEnd = useCallback(() => {
+  const handleTouchEnd = () => {
     setIsDragging(false);
-  }, []);
+  };
 
   // 커서 스타일 변경
   useEffect(() => {

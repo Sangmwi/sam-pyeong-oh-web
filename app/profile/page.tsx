@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCurrentUserProfile } from '@/lib/hooks/useProfile';
 import { useLogout } from '@/hooks/use-logout';
+import PageHeader from '@/components/common/PageHeader';
 import ProfileHeroSection from '@/components/profile/ProfileHeroSection';
 import ProfileLocationCard from '@/components/profile/ProfileLocationCard';
 import ProfileBioSection from '@/components/profile/ProfileBioSection';
@@ -12,16 +13,12 @@ import ProfileInterestsTags from '@/components/profile/ProfileInterestsTags';
 import ProfileInbodySection from '@/components/profile/ProfileInbodySection';
 import ProfileMilitarySection from '@/components/profile/ProfileMilitarySection';
 import ProfileLocationsSection from '@/components/profile/ProfileLocationsSection';
-import { Loader2, ArrowLeft, Settings, LogOut } from 'lucide-react';
+import { Loader2, Settings, LogOut } from 'lucide-react';
 
 export default function ProfilePage() {
   const router = useRouter();
   const { data: user, isLoading, error } = useCurrentUserProfile();
   const { logout, isLoggingOut } = useLogout();
-
-  const handleBack = () => {
-    router.back();
-  };
 
   if (isLoading) {
     return (
@@ -49,18 +46,10 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-background border-b border-border/50">
-        <div className="flex items-center justify-between px-5 py-4">
-          <button
-            onClick={handleBack}
-            className="p-1 hover:bg-muted/50 rounded-lg transition-colors"
-            aria-label="뒤로 가기"
-          >
-            <ArrowLeft className="w-6 h-6 text-card-foreground" />
-          </button>
-          <h1 className="text-base font-bold text-card-foreground">내 프로필</h1>
-          {/* Edit button - only show for own profile */}
+      <PageHeader
+        title="내 프로필"
+        centered
+        action={
           <Link
             href="/profile/edit"
             prefetch={true}
@@ -69,11 +58,11 @@ export default function ProfilePage() {
           >
             <Settings className="w-5 h-5 text-muted-foreground" />
           </Link>
-        </div>
-      </div>
+        }
+      />
 
       {/* Content */}
-      <div className="px-5 py-8 space-y-6 pb-32">
+      <div className="p-4 space-y-6 pb-32">
         {/* Hero Section */}
         <ProfileHeroSection user={user} />
 

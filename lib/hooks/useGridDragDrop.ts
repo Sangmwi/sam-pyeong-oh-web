@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface UseGridDragDropOptions<T> {
   items: (T | null)[];
@@ -81,49 +81,43 @@ export function useGridDragDrop<T>({
   }, [touchDragIndex]);
 
   // Desktop Drag & Drop
-  const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
+  const handleDragStart = (e: React.DragEvent, index: number) => {
     if (!canDrag(index)) return;
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', index.toString());
-  }, [canDrag]);
+  };
 
-  const handleDragOver = useCallback(
-    (e: React.DragEvent, index: number) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      if (draggedIndex !== null && draggedIndex !== index && canDrop(index)) {
-        setDragOverIndex(index);
-      }
-    },
-    [draggedIndex, canDrop]
-  );
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedIndex !== null && draggedIndex !== index && canDrop(index)) {
+      setDragOverIndex(index);
+    }
+  };
 
-  const handleDragLeave = useCallback(() => {
+  const handleDragLeave = () => {
     setDragOverIndex(null);
-  }, []);
+  };
 
-  const handleDrop = useCallback(
-    (e: React.DragEvent, dropIndex: number) => {
-      e.preventDefault();
-      const fromIndex = draggedIndex;
-      setDraggedIndex(null);
-      setDragOverIndex(null);
-
-      if (fromIndex !== null && fromIndex !== dropIndex && canDrop(dropIndex)) {
-        onReorder(fromIndex, dropIndex);
-      }
-    },
-    [draggedIndex, canDrop, onReorder]
-  );
-
-  const handleDragEnd = useCallback(() => {
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    const fromIndex = draggedIndex;
     setDraggedIndex(null);
     setDragOverIndex(null);
-  }, []);
+
+    if (fromIndex !== null && fromIndex !== dropIndex && canDrop(dropIndex)) {
+      onReorder(fromIndex, dropIndex);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
 
   // Mobile Touch
-  const handleTouchStart = useCallback((e: React.TouchEvent, index: number) => {
+  const handleTouchStart = (e: React.TouchEvent, index: number) => {
     if (!canDrag(index)) return;
 
     const touch = e.touches[0];
@@ -136,58 +130,55 @@ export function useGridDragDrop<T>({
         navigator.vibrate(50);
       }
     }, 500);
-  }, [canDrag]);
+  };
 
-  const handleTouchMove = useCallback(
-    (e: React.TouchEvent) => {
-      if (!touchStartRef.current) return;
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
 
-      const touch = e.touches[0];
-      const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
-      const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
+    const touch = e.touches[0];
+    const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
+    const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
 
-      // 움직임 감지 시 long press 취소
-      if (deltaX > 10 || deltaY > 10) {
-        if (longPressTimerRef.current) {
-          clearTimeout(longPressTimerRef.current);
-          longPressTimerRef.current = null;
-        }
+    // 움직임 감지 시 long press 취소
+    if (deltaX > 10 || deltaY > 10) {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
       }
+    }
 
-      // 터치 드래그 중이면 드롭 대상 찾기
-      if (touchDragIndex !== null && gridRef.current) {
-        const gridItems = gridRef.current.children;
-        let foundTarget = false;
+    // 터치 드래그 중이면 드롭 대상 찾기
+    if (touchDragIndex !== null && gridRef.current) {
+      const gridItems = gridRef.current.children;
+      let foundTarget = false;
 
-        for (let i = 0; i < gridItems.length; i++) {
-          const item = gridItems[i] as HTMLElement;
-          const rect = item.getBoundingClientRect();
+      for (let i = 0; i < gridItems.length; i++) {
+        const item = gridItems[i] as HTMLElement;
+        const rect = item.getBoundingClientRect();
 
-          if (
-            touch.clientX >= rect.left &&
-            touch.clientX <= rect.right &&
-            touch.clientY >= rect.top &&
-            touch.clientY <= rect.bottom
-          ) {
-            if (i !== touchDragIndex && canDrop(i)) {
-              setDragOverIndex(i);
-            } else {
-              setDragOverIndex(null);
-            }
-            foundTarget = true;
-            break;
+        if (
+          touch.clientX >= rect.left &&
+          touch.clientX <= rect.right &&
+          touch.clientY >= rect.top &&
+          touch.clientY <= rect.bottom
+        ) {
+          if (i !== touchDragIndex && canDrop(i)) {
+            setDragOverIndex(i);
+          } else {
+            setDragOverIndex(null);
           }
-        }
-
-        if (!foundTarget) {
-          setDragOverIndex(null);
+          foundTarget = true;
+          break;
         }
       }
-    },
-    [touchDragIndex, canDrop]
-  );
 
-  const handleTouchEnd = useCallback(() => {
+      if (!foundTarget) {
+        setDragOverIndex(null);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
@@ -204,9 +195,9 @@ export function useGridDragDrop<T>({
     if (fromIndex !== null && toIndex !== null && fromIndex !== toIndex) {
       onReorder(fromIndex, toIndex);
     }
-  }, [touchDragIndex, dragOverIndex, onReorder]);
+  };
 
-  const handleTouchCancel = useCallback(() => {
+  const handleTouchCancel = () => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
@@ -215,11 +206,11 @@ export function useGridDragDrop<T>({
     setTouchDragIndex(null);
     setDragOverIndex(null);
     setLongPressIndex(null);
-  }, []);
+  };
 
-  const resetLongPress = useCallback(() => {
+  const resetLongPress = () => {
     setLongPressIndex(null);
-  }, []);
+  };
 
   return {
     // State

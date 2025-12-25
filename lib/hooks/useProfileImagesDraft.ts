@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { validateImageFile, fileToDataUrl } from '@/lib/utils/imageValidation';
 
 // ============================================================
@@ -143,7 +143,7 @@ export function useProfileImagesDraft(
 
   // ========== Computed ==========
 
-  const hasChanges = useCallback(() => {
+  const hasChanges = () => {
     if (deletedUrls.length > 0) return true;
     if (images.some((img) => img.isNew)) return true;
 
@@ -151,7 +151,7 @@ export function useProfileImagesDraft(
     if (currentUrls.length !== initialImagesRef.current.length) return true;
 
     return currentUrls.some((url, i) => url !== initialImagesRef.current[i]);
-  }, [images, deletedUrls]);
+  };
 
   // ========== Actions ==========
 
@@ -167,71 +167,68 @@ export function useProfileImagesDraft(
    * content:// URI 권한이 만료되기 전에 읽기를 시작해야 하기 때문
    * 따라서 preloadedDataUrl을 미리 제공하는 것을 권장
    */
-  const addImage = useCallback(
-    async (
-      file: File,
-      index: number,
-      preloadedDataUrl?: string
-    ): Promise<AddImageAsyncResult> => {
-      // 1. 파일 검증 (preloadedDataUrl이 있으면 이미 검증됨)
-      if (!preloadedDataUrl) {
-        const validation = validateImageFile(file);
-        if (!validation.valid) {
-          return { success: false, error: validation.error };
-        }
+  const addImage = async (
+    file: File,
+    index: number,
+    preloadedDataUrl?: string
+  ): Promise<AddImageAsyncResult> => {
+    // 1. 파일 검증 (preloadedDataUrl이 있으면 이미 검증됨)
+    if (!preloadedDataUrl) {
+      const validation = validateImageFile(file);
+      if (!validation.valid) {
+        return { success: false, error: validation.error };
       }
+    }
 
-      // 2. 최대 개수 체크
-      if (images.length >= maxImages && index >= images.length) {
-        return {
-          success: false,
-          error: `최대 ${maxImages}장까지 업로드할 수 있습니다.`,
-        };
-      }
+    // 2. 최대 개수 체크
+    if (images.length >= maxImages && index >= images.length) {
+      return {
+        success: false,
+        error: `최대 ${maxImages}장까지 업로드할 수 있습니다.`,
+      };
+    }
 
-      try {
-        // 3. Data URL 획득 (미리 로드되었거나 새로 읽기)
-        const dataUrl = preloadedDataUrl || (await fileToDataUrl(file));
+    try {
+      // 3. Data URL 획득 (미리 로드되었거나 새로 읽기)
+      const dataUrl = preloadedDataUrl || (await fileToDataUrl(file));
 
-        const newDraft = createDraftFromFile(file, dataUrl);
+      const newDraft = createDraftFromFile(file, dataUrl);
 
-        // 4. 상태 업데이트
-        setImages((prev) => {
-          const newImages = [...prev];
+      // 4. 상태 업데이트
+      setImages((prev) => {
+        const newImages = [...prev];
 
-          // 기존 이미지가 있는 슬롯이면 교체
-          if (index < newImages.length && newImages[index]) {
-            const existing = newImages[index];
+        // 기존 이미지가 있는 슬롯이면 교체
+        if (index < newImages.length && newImages[index]) {
+          const existing = newImages[index];
 
-            // 기존 이미지 삭제 처리
-            if (existing.originalUrl) {
-              setDeletedUrls((urls) => [...urls, existing.originalUrl!]);
-            }
-
-            newImages[index] = newDraft;
-          } else {
-            // 빈 슬롯이면 배열 끝에 추가
-            newImages.push(newDraft);
+          // 기존 이미지 삭제 처리
+          if (existing.originalUrl) {
+            setDeletedUrls((urls) => [...urls, existing.originalUrl!]);
           }
 
-          return newImages.slice(0, maxImages);
-        });
+          newImages[index] = newDraft;
+        } else {
+          // 빈 슬롯이면 배열 끝에 추가
+          newImages.push(newDraft);
+        }
 
-        return { success: true };
-      } catch (err) {
-        return {
-          success: false,
-          error: err instanceof Error ? err.message : '파일 처리에 실패했습니다.',
-        };
-      }
-    },
-    [images.length, maxImages]
-  );
+        return newImages.slice(0, maxImages);
+      });
+
+      return { success: true };
+    } catch (err) {
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : '파일 처리에 실패했습니다.',
+      };
+    }
+  };
 
   /**
    * 이미지 삭제
    */
-  const removeImage = useCallback((index: number) => {
+  const removeImage = (index: number) => {
     setImages((prev) => {
       const target = prev[index];
       if (!target) return prev;
@@ -245,12 +242,12 @@ export function useProfileImagesDraft(
 
       return prev.filter((_, i) => i !== index);
     });
-  }, []);
+  };
 
   /**
    * 이미지 순서 변경
    */
-  const reorderImages = useCallback((fromIndex: number, toIndex: number) => {
+  const reorderImages = (fromIndex: number, toIndex: number) => {
     if (fromIndex === toIndex) return;
 
     setImages((prev) => {
@@ -259,21 +256,21 @@ export function useProfileImagesDraft(
       newImages.splice(toIndex, 0, removed);
       return newImages;
     });
-  }, []);
+  };
 
   /**
    * 초기 상태로 복원
    */
-  const reset = useCallback(() => {
+  const reset = () => {
     // Data URL은 GC가 자동 처리하므로 별도 cleanup 불필요
     setImages(initialImagesRef.current.map(createDraftFromUrl));
     setDeletedUrls([]);
-  }, []);
+  };
 
   /**
    * 저장용 변경사항 반환 (항상 최신 상태를 ref에서 읽음)
    */
-  const getChanges = useCallback((): ImageChanges => {
+  const getChanges = (): ImageChanges => {
     const currentImages = imagesRef.current;
     const currentDeletedUrls = deletedUrlsRef.current;
 
@@ -298,7 +295,7 @@ export function useProfileImagesDraft(
       finalOrder: currentImages,
       hasChanges: hasAnyChanges,
     };
-  }, []);
+  };
 
   // ========== Return ==========
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCurrentUserProfile } from '@/lib/hooks/useProfile';
+import MainTabLayout from '@/components/common/MainTabLayout';
 import GreetingSection from '@/components/home/GreetingSection';
 import HealthScoreCard from '@/components/home/HealthScoreCard';
 import SectionHeader from '@/components/home/SectionHeader';
@@ -171,30 +172,28 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="flex flex-col gap-6 p-6">
-          {/* Greeting Skeleton */}
-          <div>
-            <Skeleton height="28px" width="180px" className="mb-2" />
-            <Skeleton height="16px" width="140px" />
-          </div>
-
-          {/* Health Score Skeleton */}
-          <HealthScoreCardSkeleton />
-
-          {/* Products Section Skeleton */}
-          <section>
-            <Skeleton height="24px" width="200px" className="mb-4" />
-            <SkeletonGrid columns={2} items={4} />
-          </section>
-
-          {/* Influencer Section Skeleton */}
-          <section>
-            <Skeleton height="24px" width="140px" className="mb-4" />
-            <InfluencerSliderSkeleton />
-          </section>
+      <MainTabLayout>
+        {/* Greeting Skeleton */}
+        <div>
+          <Skeleton height="28px" width="180px" className="mb-2" />
+          <Skeleton height="16px" width="140px" />
         </div>
-      </div>
+
+        {/* Health Score Skeleton */}
+        <HealthScoreCardSkeleton />
+
+        {/* Products Section Skeleton */}
+        <section>
+          <Skeleton height="24px" width="200px" className="mb-4" />
+          <SkeletonGrid columns={2} items={4} />
+        </section>
+
+        {/* Influencer Section Skeleton */}
+        <section>
+          <Skeleton height="24px" width="140px" className="mb-4" />
+          <InfluencerSliderSkeleton />
+        </section>
+      </MainTabLayout>
     );
   }
 
@@ -203,36 +202,34 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex flex-col gap-6 p-6">
-        <GreetingSection nickname={user?.nickname || '사용자'} />
+    <MainTabLayout>
+      <GreetingSection nickname={user?.nickname || '사용자'} />
 
-        <HealthScoreCard score={DUMMY_HEALTH_SCORE} onViewDetails={handleViewHealthDetails} />
+      <HealthScoreCard score={DUMMY_HEALTH_SCORE} onViewDetails={handleViewHealthDetails} />
 
-        <section>
-          <SectionHeader
-            title="이주의 PX 핫템 🔥"
-            showMoreButton
-            onMoreClick={handleViewMoreProducts}
-          />
-          <ProductSlider
-            products={DUMMY_PRODUCTS}
-            onCardClick={handleProductClick}
-          />
-        </section>
+      <section>
+        <SectionHeader
+          title="이주의 PX 핫템 🔥"
+          showMoreButton
+          onMoreClick={handleViewMoreProducts}
+        />
+        <ProductSlider
+          products={DUMMY_PRODUCTS}
+          onCardClick={handleProductClick}
+        />
+      </section>
 
-        <section>
-          <SectionHeader
-            title="이주의 인플루언서"
-            showMoreButton
-            onMoreClick={handleViewMoreInfluencers}
-          />
-          <InfluencerSlider
-            influencers={DUMMY_INFLUENCERS}
-            onCardClick={handleInfluencerClick}
-          />
-        </section>
-      </div>
-    </div>
+      <section>
+        <SectionHeader
+          title="이주의 인플루언서"
+          showMoreButton
+          onMoreClick={handleViewMoreInfluencers}
+        />
+        <InfluencerSlider
+          influencers={DUMMY_INFLUENCERS}
+          onCardClick={handleInfluencerClick}
+        />
+      </section>
+    </MainTabLayout>
   );
 }

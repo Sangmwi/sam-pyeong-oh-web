@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, RefObject } from 'react';
+import { useState, useEffect, RefObject } from 'react';
 
 interface UseScrollProgressOptions {
   /** 인디케이터 자동 숨김 딜레이 (ms) */

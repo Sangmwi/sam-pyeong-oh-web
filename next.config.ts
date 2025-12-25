@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // React Compiler 활성화 (자동 메모이제이션)
+  // useCallback, useMemo, React.memo 수동 최적화 불필요
+  reactCompiler: true,
+
   // 이미지 최적화 설정
   images: {
     remotePatterns: [

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import type { ImageChanges } from './useProfileImagesDraft';
 import { authFetch } from '@/lib/utils/authFetch';
 
@@ -145,65 +145,62 @@ export function useProfileImageUpload(options: UseProfileImageUploadOptions = {}
    * @param changes - 드래프트에서 가져온 변경사항
    * @returns 최종 이미지 URL 배열
    */
-  const uploadImages = useCallback(
-    async (changes: ImageChanges): Promise<UploadResult> => {
-      const { newImages, deletedUrls, finalOrder } = changes;
+  const uploadImages = async (changes: ImageChanges): Promise<UploadResult> => {
+    const { newImages, deletedUrls, finalOrder } = changes;
 
-      // 변경사항 없으면 현재 URL 반환
-      if (!changes.hasChanges) {
-        return {
-          success: true,
-          imageUrls: finalOrder
-            .map((img) => img.originalUrl || img.displayUrl)
-            .filter((url) => !url.startsWith('blob:')),
-        };
+    // 변경사항 없으면 현재 URL 반환
+    if (!changes.hasChanges) {
+      return {
+        success: true,
+        imageUrls: finalOrder
+          .map((img) => img.originalUrl || img.displayUrl)
+          .filter((url) => !url.startsWith('blob:')),
+      };
+    }
+
+    setIsUploading(true);
+    setProgress({ current: 0, total: newImages.length });
+
+    try {
+      // 1. 새 이미지들 병렬 업로드 (dataUrl 사용 - WebView에서 File 재읽기 불가)
+      const uploadPromises = newImages.map(async ({ file, id, dataUrl }): Promise<UploadedImage> => {
+        const url = await uploadSingleImage(dataUrl, file.name, uploadEndpoint);
+        setProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+        return { id, url };
+      });
+
+      const uploadedImages = await Promise.all(uploadPromises);
+      const uploadedMap = new Map(uploadedImages.map(({ id, url }) => [id, url]));
+
+      // 2. 최종 이미지 URL 배열 생성
+      const finalImageUrls = finalOrder
+        .map((img) => {
+          if (img.isNew && uploadedMap.has(img.id)) {
+            return uploadedMap.get(img.id)!;
+          }
+          return img.originalUrl || '';
+        })
+        .filter(Boolean);
+
+      // 3. 삭제할 이미지들 백그라운드 처리 (실패해도 무시)
+      if (deletedUrls.length > 0) {
+        Promise.all(
+          deletedUrls.map((url) =>
+            deleteSingleImage(url, deleteEndpoint).catch(console.error)
+          )
+        );
       }
 
-      setIsUploading(true);
-      setProgress({ current: 0, total: newImages.length });
-
-      try {
-        // 1. 새 이미지들 병렬 업로드 (dataUrl 사용 - WebView에서 File 재읽기 불가)
-        const uploadPromises = newImages.map(async ({ file, id, dataUrl }): Promise<UploadedImage> => {
-          const url = await uploadSingleImage(dataUrl, file.name, uploadEndpoint);
-          setProgress((prev) => ({ ...prev, current: prev.current + 1 }));
-          return { id, url };
-        });
-
-        const uploadedImages = await Promise.all(uploadPromises);
-        const uploadedMap = new Map(uploadedImages.map(({ id, url }) => [id, url]));
-
-        // 2. 최종 이미지 URL 배열 생성
-        const finalImageUrls = finalOrder
-          .map((img) => {
-            if (img.isNew && uploadedMap.has(img.id)) {
-              return uploadedMap.get(img.id)!;
-            }
-            return img.originalUrl || '';
-          })
-          .filter(Boolean);
-
-        // 3. 삭제할 이미지들 백그라운드 처리 (실패해도 무시)
-        if (deletedUrls.length > 0) {
-          Promise.all(
-            deletedUrls.map((url) =>
-              deleteSingleImage(url, deleteEndpoint).catch(console.error)
-            )
-          );
-        }
-
-        return { success: true, imageUrls: finalImageUrls };
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : '이미지 업로드에 실패했습니다.';
-        return { success: false, error: message };
-      } finally {
-        setIsUploading(false);
-        setProgress({ current: 0, total: 0 });
-      }
-    },
-    [uploadEndpoint, deleteEndpoint]
-  );
+      return { success: true, imageUrls: finalImageUrls };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : '이미지 업로드에 실패했습니다.';
+      return { success: false, error: message };
+    } finally {
+      setIsUploading(false);
+      setProgress({ current: 0, total: 0 });
+    }
+  };
 
   /**
    * 진행률 퍼센트 계산

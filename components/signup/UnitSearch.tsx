@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Search, X } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import { Unit } from '@/lib/types';
@@ -16,7 +16,7 @@ export default function UnitSearch({ units, selectedUnit, onSelect, error }: Uni
   const [searchQuery, setSearchQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
-  const filteredUnits = useMemo(() => {
+  const getFilteredUnits = () => {
     if (!searchQuery.trim()) return units.slice(0, 20); // Show first 20 by default
 
     const query = searchQuery.toLowerCase();
@@ -27,7 +27,9 @@ export default function UnitSearch({ units, selectedUnit, onSelect, error }: Uni
         return nameMatch || locationMatch;
       })
       .slice(0, 20);
-  }, [searchQuery, units]);
+  };
+
+  const filteredUnits = getFilteredUnits();
 
   const handleSelect = (unit: Unit) => {
     onSelect(unit);
