@@ -3,18 +3,27 @@
 import { useEffect, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 
+// ============================================================================
+// Constants
+// ============================================================================
+
+const REFRESH_COOLDOWN_MS = 5 * 60 * 1000; // 5분
+const REFRESH_THRESHOLD_MS = 10 * 60 * 1000; // 만료 10분 전
+
+// ============================================================================
+// Hook
+// ============================================================================
+
 /**
  * WebView 앱에서 백그라운드 복귀 시 Supabase 세션을 자동 갱신하는 훅
  *
  * 문제: 앱이 백그라운드에서 1시간+ 있다가 복귀하면 JWT Access Token이 만료됨
  * 해결: visibilitychange 이벤트로 포그라운드 복귀 감지 → refreshSession() 호출
  *
- * @example
- * // layout.tsx 또는 루트 컴포넌트에서
- * function RootLayout() {
- *   useSessionRefresh();
- *   return <>{children}</>;
- * }
+ * 최적화:
+ * - 세션이 있을 때만 갱신 시도
+ * - 만료 10분 전에만 갱신 (불필요한 호출 방지)
+ * - 5분 쿨다운 (잦은 탭 전환 시 중복 방지)
  */
 export function useSessionRefresh() {
   const lastRefreshRef = useRef<number>(0);
@@ -23,49 +32,27 @@ export function useSessionRefresh() {
     const supabase = createClient();
 
     const handleVisibilityChange = async () => {
-      console.log('[SessionRefresh] visibilitychange:', document.visibilityState);
-
       if (document.visibilityState !== 'visible') return;
 
-      // 너무 잦은 갱신 방지 (최소 30초 간격)
+      // 쿨다운 체크
       const now = Date.now();
-      if (now - lastRefreshRef.current < 30_000) {
-        console.log('[SessionRefresh] Skipped (cooldown)');
-        return;
-      }
-
-      lastRefreshRef.current = now;
+      if (now - lastRefreshRef.current < REFRESH_COOLDOWN_MS) return;
 
       try {
-        // 갱신 전 세션 상태 확인
-        const { data: beforeSession } = await supabase.auth.getSession();
-        console.log('[SessionRefresh] Before:', {
-          hasSession: !!beforeSession.session,
-          hasRefreshToken: !!beforeSession.session?.refresh_token,
-          expiresAt: beforeSession.session?.expires_at,
-        });
+        const { data: { session } } = await supabase.auth.getSession();
 
-        console.log('[SessionRefresh] Refreshing session...');
-        const { data, error } = await supabase.auth.refreshSession();
+        // 세션이 없으면 스킵 (로그인 안 된 상태)
+        if (!session?.expires_at) return;
 
-        if (error) {
-          console.error('[SessionRefresh] Failed:', error.message, error);
-        } else {
-          console.log('[SessionRefresh] Success:', {
-            hasSession: !!data.session,
-            expiresAt: data.session?.expires_at,
-          });
-        }
+        // 만료까지 충분한 시간이 있으면 스킵
+        const expiresAt = session.expires_at * 1000;
+        if (expiresAt - now > REFRESH_THRESHOLD_MS) return;
 
-        // 갱신 후 세션 상태 재확인
-        const { data: afterSession } = await supabase.auth.getSession();
-        console.log('[SessionRefresh] After:', {
-          hasSession: !!afterSession.session,
-          hasRefreshToken: !!afterSession.session?.refresh_token,
-          expiresAt: afterSession.session?.expires_at,
-        });
-      } catch (e) {
-        console.error('[SessionRefresh] Error:', e);
+        // 갱신 실행
+        lastRefreshRef.current = now;
+        await supabase.auth.refreshSession();
+      } catch {
+        // 조용히 실패 (다음 복귀 시 재시도)
       }
     };
 
