@@ -157,6 +157,12 @@ export const useWebViewBridge = () => {
         case "SET_SESSION": {
           const success = await setSession(command.access_token, command.refresh_token);
           sendMessage({ type: "SESSION_SET", success });
+
+          // 세션 설정 성공 시 홈으로 리다이렉트
+          if (success && pathname === "/login") {
+            console.log(`${LOG_PREFIX} Session set on login page, redirecting to home`);
+            router.replace("/");
+          }
           break;
         }
 
@@ -172,7 +178,7 @@ export const useWebViewBridge = () => {
 
     window.addEventListener("app-command", handleAppCommand);
     return () => window.removeEventListener("app-command", handleAppCommand);
-  }, [router, sendRouteInfo, sendMessage, setSession, clearSession]);
+  }, [router, pathname, sendRouteInfo, sendMessage, setSession, clearSession]);
 
   // ──────────────────────────────────────────────────────────────────────────
   // 초기화 및 경로 변경 처리

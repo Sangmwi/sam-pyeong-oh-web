@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'crypto';
 import { withAuth } from '@/utils/supabase/auth';
 
 /**
@@ -38,14 +39,14 @@ export const POST = withAuth(async (request: NextRequest, { authUser, supabase }
     );
   }
 
-  // Generate unique filename (contentType 기반으로 확장자 결정)
+  // Generate unique filename (UUID로 충돌 방지)
   const mimeToExt: Record<string, string> = {
     'image/jpeg': 'jpg',
     'image/png': 'png',
     'image/webp': 'webp',
   };
   const fileExt = mimeToExt[file.type] || file.name.split('.').pop() || 'jpg';
-  const fileName = `${authUser.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+  const fileName = `${authUser.id}/${randomUUID()}.${fileExt}`;
 
   // Upload to Supabase Storage
   const { error: uploadError } = await supabase.storage

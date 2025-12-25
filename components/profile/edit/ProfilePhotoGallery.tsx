@@ -21,6 +21,7 @@ const MAX_IMAGES = 4;
 
 export interface ProfilePhotoGalleryProps {
   initialImages: string[];
+  isSaving?: boolean;
   onDraftChange?: (draft: ReturnType<typeof useProfileImagesDraft>) => void;
 }
 
@@ -188,10 +189,11 @@ function PhotoSlot({
 
 export default function ProfilePhotoGallery({
   initialImages,
+  isSaving = false,
   onDraftChange,
 }: ProfilePhotoGalleryProps) {
   // ========== Draft Hook ==========
-  const draft = useProfileImagesDraft(initialImages);
+  const draft = useProfileImagesDraft(initialImages, { isSaving });
   const { images, addImage, removeImage, reorderImages } = draft;
 
   // ========== Drag & Drop Hook ==========

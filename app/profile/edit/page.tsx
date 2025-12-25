@@ -152,6 +152,7 @@ export default function ProfileEditPage() {
       <div className="px-5 pb-32 space-y-8">
         <ProfilePhotoGallery
           initialImages={user.profileImages || []}
+          isSaving={isSaving}
           onDraftChange={handleDraftChange}
         />
 

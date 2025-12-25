@@ -43,6 +43,8 @@ export interface AddImageAsyncResult {
 
 interface UseProfileImagesDraftOptions {
   maxImages?: number;
+  /** 저장 중 여부 - true면 initialImages 변경 무시 */
+  isSaving?: boolean;
 }
 
 // ============================================================
@@ -97,7 +99,7 @@ export function useProfileImagesDraft(
   initialImages: string[] = [],
   options: UseProfileImagesDraftOptions = {}
 ) {
-  const { maxImages = DEFAULT_MAX_IMAGES } = options;
+  const { maxImages = DEFAULT_MAX_IMAGES, isSaving = false } = options;
 
   // ========== State ==========
 
@@ -122,8 +124,11 @@ export function useProfileImagesDraft(
 
   // ========== Effects ==========
 
-  // 초기 이미지 변경 시 리셋
+  // 초기 이미지 변경 시 리셋 (저장 중에는 무시)
   useEffect(() => {
+    // 저장 중이면 initialImages 변경 무시 (캐시 업데이트로 인한 깜빡임 방지)
+    if (isSaving) return;
+
     const hasInitialChanged =
       JSON.stringify(initialImages) !== JSON.stringify(initialImagesRef.current);
 
@@ -132,7 +137,7 @@ export function useProfileImagesDraft(
       setImages(initialImages.map(createDraftFromUrl));
       setDeletedUrls([]);
     }
-  }, [initialImages]);
+  }, [initialImages, isSaving]);
 
   // Data URL은 GC가 자동 처리하므로 cleanup 불필요
 
