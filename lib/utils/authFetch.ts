@@ -11,6 +11,7 @@
  */
 
 import { createClient } from '@/utils/supabase/client';
+import { ApiError } from '@/lib/types';
 
 // ============================================================================
 // Constants
@@ -41,8 +42,15 @@ interface AuthFetchOptions extends RequestInit {
 }
 
 // ============================================================================
-// Session Refresh
+// Session Refresh with Mutex (Race Condition Prevention)
 // ============================================================================
+
+/**
+ * 세션 갱신 상태 관리
+ *
+ * 동시에 여러 요청이 401을 받았을 때 한 번만 갱신하도록 함
+ */
+let refreshPromise: Promise<boolean> | null = null;
 
 /**
  * 앱에 세션 갱신을 요청합니다.
@@ -105,13 +113,37 @@ async function refreshCookieSession(): Promise<boolean> {
 }
 
 /**
- * 환경에 맞는 세션 갱신을 시도합니다.
+ * 실제 세션 갱신 수행 (내부용)
  */
-async function tryRefreshSession(): Promise<boolean> {
+async function performSessionRefresh(): Promise<boolean> {
   if (isInWebView()) {
     return requestSessionRefreshFromApp();
   }
   return refreshCookieSession();
+}
+
+/**
+ * 환경에 맞는 세션 갱신을 시도합니다.
+ *
+ * Mutex 패턴으로 동시 갱신 요청 방지:
+ * - 첫 번째 요청만 실제 갱신 수행
+ * - 이후 요청들은 첫 번째 요청의 결과를 공유
+ */
+async function tryRefreshSession(): Promise<boolean> {
+  // 이미 갱신 중이면 기존 Promise 반환
+  if (refreshPromise) {
+    console.log(`${LOG_PREFIX} Waiting for existing refresh...`);
+    return refreshPromise;
+  }
+
+  // 새 갱신 시작
+  console.log(`${LOG_PREFIX} Starting new session refresh...`);
+  refreshPromise = performSessionRefresh().finally(() => {
+    // 갱신 완료 후 Promise 초기화 (다음 갱신 허용)
+    refreshPromise = null;
+  });
+
+  return refreshPromise;
 }
 
 // ============================================================================
@@ -238,22 +270,29 @@ export async function authFetch(
 
 /**
  * JSON 응답을 처리하는 authFetch 헬퍼
+ *
+ * @throws {ApiError} 요청 실패 시 ApiError 발생
  */
 export async function authFetchJson<T>(
   url: string,
   options: AuthFetchOptions = {}
 ): Promise<T> {
-  const response = await authFetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  });
+  let response: Response;
+
+  try {
+    response = await authFetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    });
+  } catch (error) {
+    throw ApiError.fromNetworkError(error);
+  }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || error.error || `Request failed: ${response.status}`);
+    throw await ApiError.fromResponse(response);
   }
 
   return response.json();

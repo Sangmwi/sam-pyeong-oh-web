@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:types": "npx supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > lib/database.types.ts",
+    "db:types:local": "npx supabase gen types typescript --local > lib/database.types.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
@@ -15,7 +17,8 @@
     "lucide-react": "^0.561.0",
     "next": "16.0.10",
     "react": "19.2.1",
-    "react-dom": "19.2.1"
+    "react-dom": "19.2.1",
+    "zustand": "^5.0.2"
   },
   "devDependencies": {
     "@svgr/webpack": "^8.1.0",

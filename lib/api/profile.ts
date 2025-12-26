@@ -5,9 +5,11 @@
  * React Query에 의존하지 않음 - 재사용성과 테스트 용이성 향상
  *
  * 모든 API 호출은 authFetch를 사용하여 401 에러 시 자동 세션 갱신
+ *
+ * @throws {ApiError} 모든 API 에러는 ApiError로 통일
  */
 
-import { User, ProfileUpdateData } from '@/lib/types';
+import { User, ProfileUpdateData, ApiError } from '@/lib/types';
 import { authFetch } from '@/lib/utils/authFetch';
 
 /**
@@ -18,7 +20,7 @@ export const profileApi = {
    * 현재 사용자 프로필 조회
    *
    * @returns User 또는 null (인증되지 않은 경우)
-   * @throws Error 네트워크 오류 또는 서버 오류 발생 시
+   * @throws {ApiError} 네트워크 오류 또는 서버 오류 발생 시
    */
   async getCurrentUserProfile(): Promise<User | null> {
     const response = await authFetch('/api/user/me', {
@@ -28,8 +30,7 @@ export const profileApi = {
 
     if (response.status === 404) return null;
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Failed to fetch user profile');
+      throw await ApiError.fromResponse(response);
     }
 
     return response.json();
@@ -42,6 +43,7 @@ export const profileApi = {
    *
    * @param userId - 조회할 사용자 ID
    * @returns User 또는 null (사용자 없음)
+   * @throws {ApiError} 네트워크 오류 또는 서버 오류 발생 시
    */
   async getUserProfile(userId: string): Promise<User | null> {
     const response = await authFetch(`/api/user/${userId}`, {
@@ -51,8 +53,7 @@ export const profileApi = {
 
     if (response.status === 404) return null;
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Failed to fetch user profile');
+      throw await ApiError.fromResponse(response);
     }
 
     return response.json();
@@ -65,6 +66,7 @@ export const profileApi = {
    *
    * @param data - 업데이트할 프로필 데이터 (부분 업데이트 지원)
    * @returns 업데이트된 User 객체
+   * @throws {ApiError} 업데이트 실패 시
    */
   async updateProfile(data: ProfileUpdateData): Promise<User> {
     const response = await authFetch('/api/user/profile', {
@@ -74,8 +76,7 @@ export const profileApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Failed to update profile');
+      throw await ApiError.fromResponse(response);
     }
 
     return response.json();
@@ -87,6 +88,7 @@ export const profileApi = {
    * @param file - 업로드할 이미지 파일
    * @param type - 이미지 타입 ('main' | 'additional')
    * @returns 업로드 결과 (url, index, profileImages)
+   * @throws {ApiError} 업로드 실패 시
    */
   async uploadProfileImage(
     file: File,
@@ -103,8 +105,7 @@ export const profileApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Failed to upload image');
+      throw await ApiError.fromResponse(response);
     }
 
     return response.json();
@@ -115,6 +116,7 @@ export const profileApi = {
    *
    * @param imageUrl - 삭제할 이미지 URL
    * @returns 삭제 결과 (success, profileImages)
+   * @throws {ApiError} 삭제 실패 시
    */
   async deleteProfileImage(imageUrl: string): Promise<{ success: boolean; profileImages: string[] }> {
     const response = await authFetch('/api/user/profile/image', {
@@ -124,8 +126,7 @@ export const profileApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Failed to delete image');
+      throw await ApiError.fromResponse(response);
     }
 
     return response.json();
@@ -180,6 +181,7 @@ export const profileSearchApi = {
    *
    * @param filters - 검색 필터
    * @returns 검색 결과
+   * @throws {ApiError} 검색 실패 시
    */
   async searchProfiles(
     filters: ProfileSearchFilters
@@ -228,8 +230,7 @@ export const profileSearchApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Failed to search profiles');
+      throw await ApiError.fromResponse(response);
     }
 
     return response.json();
@@ -249,6 +250,7 @@ export const profileSearchApi = {
    *
    * @param limit - 반환할 추천 프로필 수 (기본 20)
    * @returns 추천 프로필 목록
+   * @throws {ApiError} 조회 실패 시
    */
   async getRecommendedProfiles(limit: number = 20): Promise<User[]> {
     const response = await authFetch(
@@ -260,8 +262,7 @@ export const profileSearchApi = {
     );
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Failed to fetch recommendations');
+      throw await ApiError.fromResponse(response);
     }
 
     return response.json();
@@ -275,6 +276,7 @@ export const profileSearchApi = {
    * @param unitId - 부대 ID (현재 사용자 기준)
    * @param limit - 반환 개수
    * @returns 같은 부대 사용자 목록
+   * @throws {ApiError} 조회 실패 시
    */
   async getSameUnitUsers(unitId: string, limit: number = 20): Promise<User[]> {
     const response = await authFetch(
@@ -286,8 +288,7 @@ export const profileSearchApi = {
     );
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Failed to fetch same unit users');
+      throw await ApiError.fromResponse(response);
     }
 
     return response.json();

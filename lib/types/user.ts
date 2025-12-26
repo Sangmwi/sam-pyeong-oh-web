@@ -1,4 +1,26 @@
-// User types based on RUTINERS_SIGNUP_PROFILE_UX.md
+/**
+ * User Types
+ *
+ * Database 스키마(lib/database.types.ts)에서 파생된 타입들
+ * snake_case → camelCase 변환은 API 레이어에서 수행
+ *
+ * 타입 동기화:
+ * 1. Supabase 스키마 변경 시 `npm run db:types` 실행
+ * 2. 필드 추가/변경 시 아래 타입도 함께 수정
+ */
+
+import type { Tables } from '@/lib/database.types';
+
+// ============================================================================
+// Database Row Type (snake_case - DB 직접 사용용)
+// ============================================================================
+
+/** DB users 테이블 Row 타입 */
+export type DbUser = Tables<'users'>;
+
+// ============================================================================
+// Domain Types (camelCase - 클라이언트 사용용)
+// ============================================================================
 
 export type Gender = 'male' | 'female';
 
@@ -24,7 +46,12 @@ export interface Unit {
   location?: string;
 }
 
-// Full User data structure
+/**
+ * 클라이언트용 User 타입 (camelCase)
+ *
+ * API 응답에서 사용되는 형태
+ * DbUser를 camelCase로 변환한 구조
+ */
 export interface User {
   id: string;
   providerId: string;
@@ -56,7 +83,47 @@ export interface User {
   updatedAt?: string;
 }
 
-// Signup flow data
+// ============================================================================
+// Type Transformers
+// ============================================================================
+
+/**
+ * DbUser (snake_case) → User (camelCase) 변환
+ */
+export function transformDbUserToUser(dbUser: DbUser): User {
+  return {
+    id: dbUser.id,
+    providerId: dbUser.provider_id,
+    email: dbUser.email,
+    realName: dbUser.real_name,
+    phoneNumber: dbUser.phone_number,
+    birthDate: dbUser.birth_date,
+    gender: dbUser.gender as Gender,
+    nickname: dbUser.nickname,
+    enlistmentMonth: dbUser.enlistment_month.substring(0, 7), // YYYY-MM-DD → YYYY-MM
+    rank: dbUser.rank as Rank,
+    unitId: dbUser.unit_id,
+    unitName: dbUser.unit_name,
+    specialty: dbUser.specialty as Specialty,
+    profileImages: dbUser.profile_images ?? undefined,
+    bio: dbUser.bio ?? undefined,
+    height: dbUser.height_cm ?? undefined,
+    weight: dbUser.weight_kg ?? undefined,
+    muscleMass: dbUser.skeletal_muscle_mass_kg ?? undefined,
+    bodyFatPercentage: dbUser.body_fat_percentage ?? undefined,
+    interestedLocations: dbUser.interested_exercise_locations ?? undefined,
+    interestedExercises: dbUser.interested_exercise_types ?? undefined,
+    isSmoker: dbUser.is_smoker ?? undefined,
+    showInbodyPublic: dbUser.show_body_metrics ?? undefined,
+    createdAt: dbUser.created_at,
+    updatedAt: dbUser.updated_at,
+  };
+}
+
+// ============================================================================
+// Signup Flow Types
+// ============================================================================
+
 export interface PassVerificationData {
   realName: string;
   phoneNumber: string;
@@ -78,7 +145,10 @@ export interface SignupCompleteData extends PassVerificationData, MilitaryInfoDa
   email: string;
 }
 
-// Profile update data
+// ============================================================================
+// Profile Update Types
+// ============================================================================
+
 export interface ProfileUpdateData {
   nickname?: string;
   profileImages?: string[];
@@ -92,5 +162,3 @@ export interface ProfileUpdateData {
   isSmoker?: boolean;
   showInbodyPublic?: boolean;
 }
-
-

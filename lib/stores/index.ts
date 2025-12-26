@@ -1,0 +1,35 @@
+/**
+ * Zustand Stores
+ *
+ * 전역 상태 관리를 위한 스토어들
+ *
+ * 사용 가이드:
+ * - 서버 상태: React Query 사용 (API 데이터, 캐싱)
+ * - 클라이언트 상태: Zustand 사용 (UI 상태, 모달, 앱 설정)
+ */
+
+// App Store - 앱 전역 상태
+export {
+  useAppStore,
+  selectIsInWebView,
+  selectIsWebViewReady,
+  selectIsOnline,
+  selectIsInitialized,
+} from './appStore';
+
+// Modal Store - 모달 관리
+export {
+  useModalStore,
+  selectModals,
+  selectCurrentModal,
+  selectHasOpenModals,
+  selectIsModalOpen,
+  useConfirmDialog,
+  useAlertDialog,
+} from './modalStore';
+
+export type {
+  ModalType,
+  ModalDataMap,
+  ModalInstance,
+} from './modalStore';
