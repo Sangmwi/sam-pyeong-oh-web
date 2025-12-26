@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useProfileImagesDraft, useGridDragDrop } from '@/hooks';
-import type { DraftImage, AddImageAsyncResult } from '@/hooks/profile/useProfileImagesDraft';
-import { startFileRead, arrayBufferToDataUrl, validateImageFile } from '@/lib/utils/imageValidation';
+import type { DraftImage, AddImageResult } from '@/hooks/profile/useProfileImagesDraft';
+import { validateImageFile } from '@/lib/utils/imageValidation';
 import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import FormSection from '@/components/ui/FormSection';
 import ErrorToast from '@/components/ui/ErrorToast';
@@ -243,15 +243,14 @@ export default function ProfilePhotoGallery({
     fileInputRef.current?.click();
   };
 
-  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const inputElement = e.target;
     const targetIndex = uploadIndexRef.current;
 
-    // 안드로이드 WebView content:// URI 권한 만료 문제 해결
-    // 이벤트 핸들러 내에서 즉시 파일 검증 + 읽기 시작
+    // 파일 검증 (addImage 내부에서도 하지만 에러 메시지 표시를 위해)
     const validation = validateImageFile(file);
     if (!validation.valid) {
       inputElement.value = '';
@@ -259,22 +258,14 @@ export default function ProfilePhotoGallery({
       return;
     }
 
-    // 파일 읽기 즉시 시작 (비동기지만 읽기 "시작"은 동기적)
-    const { promise: readPromise } = startFileRead(file);
+    // 동기적으로 이미지 추가 (Blob URL 즉시 생성)
+    const result: AddImageResult = addImage(file, targetIndex);
 
-    try {
-      const arrayBuffer = await readPromise;
-      const dataUrl = await arrayBufferToDataUrl(arrayBuffer, file.type || 'image/jpeg');
-      const result: AddImageAsyncResult = await addImage(file, targetIndex, dataUrl);
-
-      if (!result.success && result.error) {
-        setErrorMessage(result.error);
-      }
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '파일 처리에 실패했습니다.');
-    } finally {
-      inputElement.value = '';
+    if (!result.success && result.error) {
+      setErrorMessage(result.error);
     }
+
+    inputElement.value = '';
   };
 
   const handleDelete = (index: number) => {

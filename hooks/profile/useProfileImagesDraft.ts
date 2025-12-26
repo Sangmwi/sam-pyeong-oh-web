@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { validateImageFile, fileToDataUrl } from '@/lib/utils/imageValidation';
+import { validateImageFile } from '@/lib/utils/imageValidation';
 
 // ============================================================
 // Types
@@ -21,8 +21,8 @@ export interface DraftImage {
 }
 
 export interface ImageChanges {
-  /** 새로 추가된 이미지들 (dataUrl 포함 - 안드로이드 WebView에서 File 재읽기 불가) */
-  newImages: { file: File; id: string; dataUrl: string }[];
+  /** 새로 추가된 이미지들 */
+  newImages: { file: File; id: string }[];
   /** 삭제된 이미지 URL들 */
   deletedUrls: string[];
   /** 최종 순서 */
@@ -32,11 +32,6 @@ export interface ImageChanges {
 }
 
 export interface AddImageResult {
-  success: boolean;
-  error?: string;
-}
-
-export interface AddImageAsyncResult {
   success: boolean;
   error?: string;
 }
@@ -66,12 +61,21 @@ const createDraftFromUrl = (url: string): DraftImage => ({
   isNew: false,
 });
 
-const createDraftFromFile = (file: File, dataUrl: string): DraftImage => ({
+const createDraftFromFile = (file: File): DraftImage => ({
   id: generateId(),
-  displayUrl: dataUrl,
+  displayUrl: URL.createObjectURL(file),
   file,
   isNew: true,
 });
+
+/**
+ * Blob URL 해제 (메모리 누수 방지)
+ */
+const revokeBlobUrl = (url: string) => {
+  if (url.startsWith('blob:')) {
+    URL.revokeObjectURL(url);
+  }
+};
 
 // ============================================================
 // Hook
@@ -81,13 +85,13 @@ const createDraftFromFile = (file: File, dataUrl: string): DraftImage => ({
  * 프로필 이미지 드래프트 관리 훅
  *
  * 로컬 상태만 관리하며, 저장 시 일괄 처리를 위한 데이터를 제공합니다.
- * 압축 없이 원본 파일을 그대로 사용합니다.
+ * Blob URL을 사용하여 메모리 효율적으로 미리보기를 표시합니다.
  *
  * @example
  * ```tsx
  * const { images, addImage, removeImage, getChanges } = useProfileImagesDraft(initialUrls);
  *
- * const handleAdd = async (file: File, index: number) => {
+ * const handleAdd = (file: File, index: number) => {
  *   const result = addImage(file, index);
  *   if (!result.success) {
  *     showError(result.error);
@@ -126,20 +130,31 @@ export function useProfileImagesDraft(
 
   // 초기 이미지 변경 시 리셋 (저장 중에는 무시)
   useEffect(() => {
-    // 저장 중이면 initialImages 변경 무시 (캐시 업데이트로 인한 깜빡임 방지)
     if (isSaving) return;
 
     const hasInitialChanged =
       JSON.stringify(initialImages) !== JSON.stringify(initialImagesRef.current);
 
     if (hasInitialChanged) {
+      // 기존 blob URL들 해제
+      imagesRef.current.forEach((img) => {
+        if (img.isNew) revokeBlobUrl(img.displayUrl);
+      });
+
       initialImagesRef.current = initialImages;
       setImages(initialImages.map(createDraftFromUrl));
       setDeletedUrls([]);
     }
   }, [initialImages, isSaving]);
 
-  // Data URL은 GC가 자동 처리하므로 cleanup 불필요
+  // 컴포넌트 언마운트 시 모든 blob URL 해제
+  useEffect(() => {
+    return () => {
+      imagesRef.current.forEach((img) => {
+        if (img.isNew) revokeBlobUrl(img.displayUrl);
+      });
+    };
+  }, []);
 
   // ========== Computed ==========
 
@@ -156,28 +171,13 @@ export function useProfileImagesDraft(
   // ========== Actions ==========
 
   /**
-   * 이미지 추가
-   *
-   * @param file - 파일 객체
-   * @param index - 추가할 슬롯 인덱스
-   * @param preloadedDataUrl - 미리 로드된 Data URL (안드로이드 WebView 호환용)
-   *                           제공되면 파일 읽기를 건너뜀
-   *
-   * 🔥 안드로이드 WebView에서는 이벤트 핸들러 내에서 즉시 파일 읽기를 시작해야 함
-   * content:// URI 권한이 만료되기 전에 읽기를 시작해야 하기 때문
-   * 따라서 preloadedDataUrl을 미리 제공하는 것을 권장
+   * 이미지 추가 (동기 함수)
    */
-  const addImage = async (
-    file: File,
-    index: number,
-    preloadedDataUrl?: string
-  ): Promise<AddImageAsyncResult> => {
-    // 1. 파일 검증 (preloadedDataUrl이 있으면 이미 검증됨)
-    if (!preloadedDataUrl) {
-      const validation = validateImageFile(file);
-      if (!validation.valid) {
-        return { success: false, error: validation.error };
-      }
+  const addImage = (file: File, index: number): AddImageResult => {
+    // 1. 파일 검증
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
     }
 
     // 2. 최대 개수 체크
@@ -188,41 +188,37 @@ export function useProfileImagesDraft(
       };
     }
 
-    try {
-      // 3. Data URL 획득 (미리 로드되었거나 새로 읽기)
-      const dataUrl = preloadedDataUrl || (await fileToDataUrl(file));
+    // 3. 드래프트 생성 (Blob URL 자동 생성)
+    const newDraft = createDraftFromFile(file);
 
-      const newDraft = createDraftFromFile(file, dataUrl);
+    // 4. 상태 업데이트
+    setImages((prev) => {
+      const newImages = [...prev];
 
-      // 4. 상태 업데이트
-      setImages((prev) => {
-        const newImages = [...prev];
+      // 기존 이미지가 있는 슬롯이면 교체
+      if (index < newImages.length && newImages[index]) {
+        const existing = newImages[index];
 
-        // 기존 이미지가 있는 슬롯이면 교체
-        if (index < newImages.length && newImages[index]) {
-          const existing = newImages[index];
-
-          // 기존 이미지 삭제 처리
-          if (existing.originalUrl) {
-            setDeletedUrls((urls) => [...urls, existing.originalUrl!]);
-          }
-
-          newImages[index] = newDraft;
-        } else {
-          // 빈 슬롯이면 배열 끝에 추가
-          newImages.push(newDraft);
+        // 기존 새 이미지의 blob URL 해제
+        if (existing.isNew) {
+          revokeBlobUrl(existing.displayUrl);
         }
 
-        return newImages.slice(0, maxImages);
-      });
+        // 기존 서버 이미지면 삭제 목록에 추가
+        if (existing.originalUrl) {
+          setDeletedUrls((urls) => [...urls, existing.originalUrl!]);
+        }
 
-      return { success: true };
-    } catch (err) {
-      return {
-        success: false,
-        error: err instanceof Error ? err.message : '파일 처리에 실패했습니다.',
-      };
-    }
+        newImages[index] = newDraft;
+      } else {
+        // 빈 슬롯이면 배열 끝에 추가
+        newImages.push(newDraft);
+      }
+
+      return newImages.slice(0, maxImages);
+    });
+
+    return { success: true };
   };
 
   /**
@@ -233,12 +229,15 @@ export function useProfileImagesDraft(
       const target = prev[index];
       if (!target) return prev;
 
+      // 새 이미지의 blob URL 해제
+      if (target.isNew) {
+        revokeBlobUrl(target.displayUrl);
+      }
+
       // 기존 이미지면 삭제 목록에 추가
       if (target.originalUrl) {
         setDeletedUrls((urls) => [...urls, target.originalUrl!]);
       }
-
-      // Data URL은 GC가 자동 처리하므로 별도 cleanup 불필요
 
       return prev.filter((_, i) => i !== index);
     });
@@ -262,7 +261,11 @@ export function useProfileImagesDraft(
    * 초기 상태로 복원
    */
   const reset = () => {
-    // Data URL은 GC가 자동 처리하므로 별도 cleanup 불필요
+    // 모든 새 이미지의 blob URL 해제
+    images.forEach((img) => {
+      if (img.isNew) revokeBlobUrl(img.displayUrl);
+    });
+
     setImages(initialImagesRef.current.map(createDraftFromUrl));
     setDeletedUrls([]);
   };
@@ -276,7 +279,7 @@ export function useProfileImagesDraft(
 
     const newImages = currentImages
       .filter((img) => img.isNew && img.file)
-      .map((img) => ({ file: img.file!, id: img.id, dataUrl: img.displayUrl }));
+      .map((img) => ({ file: img.file!, id: img.id }));
 
     // hasChanges 로직 인라인
     const hasAnyChanges = (() => {
